@@ -1,19 +1,43 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Trophy, CalendarIcon, Upload, ArrowRight, ArrowLeft } from "lucide-react"
-import { format } from "date-fns"
-import { useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
-import type { SportType, TournamentFormat } from "@/lib/types"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Trophy,
+  CalendarIcon,
+  Upload,
+  ArrowRight,
+  ArrowLeft,
+} from "lucide-react";
+import { format } from "date-fns";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import type { SportType, TournamentFormat } from "@/lib/types";
+import axios from "axios";
+import { useToast } from "@/hooks/use-toast";
 
 const sportTypes: SportType[] = [
   "Soccer",
@@ -24,12 +48,14 @@ const sportTypes: SportType[] = [
   "Baseball",
   "Rugby",
   "Hockey",
-]
-const formatTypes: TournamentFormat[] = ["League", "Knockout", "Hybrid"]
+];
+const formatTypes: TournamentFormat[] = ["League", "Knockout", "Hybrid"];
 
 export default function CreateTournamentPage() {
-  const router = useRouter()
-  const [step, setStep] = useState(1)
+  const router = useRouter();
+  const { toast } = useToast();
+  const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     sport: "",
@@ -44,22 +70,169 @@ export default function CreateTournamentPage() {
     pointsForWin: "3",
     pointsForDraw: "1",
     pointsForLoss: "0",
-  })
+  });
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleChange = (field: string, value: string | Date | undefined) => {
-    setFormData({ ...formData, [field]: value })
-  }
+    setFormData({ ...formData, [field]: value });
+  };
 
-  const handleSubmit = () => {
-    // Simulate tournament creation
-    console.log("Creating tournament:", formData)
-    router.push("/organizer/dashboard")
-  }
+  const handleFileSelect = (file: File) => {
+    // Validate file type
+    const validTypes = ["image/png", "image/jpeg", "image/jpg"];
+    if (!validTypes.includes(file.type)) {
+      alert("Please upload a PNG or JPG file");
+      return;
+    }
+
+    // Validate file size (5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("File size must be less than 5MB");
+      return;
+    }
+
+    setBannerFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setBannerPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleRemoveBanner = () => {
+    setBannerFile(null);
+    setBannerPreview(null);
+  };
+
+  const handleSubmit = async () => {
+    setIsLoading(true);
+
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to create a tournament",
+          variant: "destructive",
+        });
+        router.push("/organizer/login");
+        return;
+      }
+
+      // Create FormData
+      const tournamentData = new FormData();
+      tournamentData.append("name", formData.name);
+      tournamentData.append("sportType", formData.sport.toLowerCase());
+      tournamentData.append("tournamentFormat", formData.format.toLowerCase());
+      tournamentData.append("numberOfParticipants", formData.teamsCount);
+
+      // Optional fields
+      if (formData.location)
+        tournamentData.append("location", formData.location);
+      if (formData.description)
+        tournamentData.append("description", formData.description);
+      if (formData.rules) tournamentData.append("rules", formData.rules);
+      if (formData.prizes) tournamentData.append("prizes", formData.prizes);
+      if (formData.startDate)
+        tournamentData.append("startDate", formData.startDate.toISOString());
+      if (formData.endDate)
+        tournamentData.append("endDate", formData.endDate.toISOString());
+
+      // Points system for League format
+      if (formData.format === "League") {
+        tournamentData.append("pointsForWin", formData.pointsForWin);
+        tournamentData.append("pointsForDraw", formData.pointsForDraw);
+        tournamentData.append("pointsForLoss", formData.pointsForLoss);
+      }
+
+      // Banner file if exists
+      if (bannerFile) {
+        tournamentData.append("tournamentBanner", bannerFile);
+      }
+
+      // Send request to API
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/tournaments`,
+        tournamentData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Don't set Content-Type, axios will set it automatically with boundary for multipart/form-data
+          },
+        }
+      );
+
+      // Success
+      if (response.data) {
+        toast({
+          title: "Tournament created!",
+          description: "Your tournament has been created successfully",
+        });
+        router.push("/organizer/dashboard");
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.message || "Failed to create tournament";
+        toast({
+          title: "Creation failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const isStep1Valid =
-    formData.name && formData.sport && formData.format && formData.startDate && formData.endDate && formData.location
-  const isStep2Valid = formData.description && formData.teamsCount
-  const isStep3Valid = formData.rules
+    formData.name &&
+    formData.sport &&
+    formData.format &&
+    formData.startDate &&
+    formData.endDate &&
+    formData.location;
+  const isStep2Valid = formData.description && formData.teamsCount;
+  const isStep3Valid = formData.rules;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -75,7 +248,9 @@ export default function CreateTournamentPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold">Create Tournament</h1>
-            <p className="text-muted-foreground">Set up your new tournament in a few simple steps</p>
+            <p className="text-muted-foreground">
+              Set up your new tournament in a few simple steps
+            </p>
           </div>
         </div>
       </div>
@@ -90,7 +265,9 @@ export default function CreateTournamentPage() {
                   <div
                     className={cn(
                       "h-10 w-10 rounded-full flex items-center justify-center font-semibold transition-colors",
-                      step >= s ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground",
+                      step >= s
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-muted text-muted-foreground"
                     )}
                   >
                     {s}
@@ -104,7 +281,10 @@ export default function CreateTournamentPage() {
                 </div>
                 {s < 4 && (
                   <div
-                    className={cn("h-1 flex-1 mx-2 rounded transition-colors", step > s ? "bg-accent" : "bg-muted")}
+                    className={cn(
+                      "h-1 flex-1 mx-2 rounded transition-colors",
+                      step > s ? "bg-accent" : "bg-muted"
+                    )}
                   />
                 )}
               </div>
@@ -118,7 +298,9 @@ export default function CreateTournamentPage() {
         <Card className="glass">
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
-            <CardDescription>Enter the fundamental details of your tournament</CardDescription>
+            <CardDescription>
+              Enter the fundamental details of your tournament
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -134,7 +316,10 @@ export default function CreateTournamentPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="sport">Sport Type *</Label>
-                <Select value={formData.sport} onValueChange={(value) => handleChange("sport", value)}>
+                <Select
+                  value={formData.sport}
+                  onValueChange={(value) => handleChange("sport", value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select sport" />
                   </SelectTrigger>
@@ -150,7 +335,10 @@ export default function CreateTournamentPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="format">Tournament Format *</Label>
-                <Select value={formData.format} onValueChange={(value) => handleChange("format", value)}>
+                <Select
+                  value={formData.format}
+                  onValueChange={(value) => handleChange("format", value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select format" />
                   </SelectTrigger>
@@ -170,9 +358,14 @@ export default function CreateTournamentPage() {
                 <Label>Start Date *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal bg-transparent">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal bg-transparent"
+                    >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.startDate ? format(formData.startDate, "PPP") : "Pick a date"}
+                      {formData.startDate
+                        ? format(formData.startDate, "PPP")
+                        : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -189,9 +382,14 @@ export default function CreateTournamentPage() {
                 <Label>End Date *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal bg-transparent">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal bg-transparent"
+                    >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.endDate ? format(formData.endDate, "PPP") : "Pick a date"}
+                      {formData.endDate
+                        ? format(formData.endDate, "PPP")
+                        : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -199,7 +397,9 @@ export default function CreateTournamentPage() {
                       mode="single"
                       selected={formData.endDate}
                       onSelect={(date) => handleChange("endDate", date)}
-                      disabled={(date) => (formData.startDate ? date < formData.startDate : false)}
+                      disabled={(date) =>
+                        formData.startDate ? date < formData.startDate : false
+                      }
                     />
                   </PopoverContent>
                 </Popover>
@@ -231,7 +431,9 @@ export default function CreateTournamentPage() {
         <Card className="glass">
           <CardHeader>
             <CardTitle>Tournament Details</CardTitle>
-            <CardDescription>Provide additional information about your tournament</CardDescription>
+            <CardDescription>
+              Provide additional information about your tournament
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -270,11 +472,71 @@ export default function CreateTournamentPage() {
 
             <div className="space-y-2">
               <Label>Tournament Banner (Optional)</Label>
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-accent transition-colors cursor-pointer">
-                <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground mb-1">Click to upload or drag and drop</p>
-                <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB</p>
-              </div>
+              <input
+                type="file"
+                id="banner-upload"
+                className="hidden"
+                accept="image/png,image/jpeg,image/jpg"
+                onChange={handleFileInputChange}
+              />
+              {!bannerPreview ? (
+                <div
+                  className={cn(
+                    "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
+                    isDragging
+                      ? "border-accent bg-accent/5"
+                      : "border-border hover:border-accent"
+                  )}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() =>
+                    document.getElementById("banner-upload")?.click()
+                  }
+                >
+                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Click to upload or drag and drop
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    PNG, JPG up to 5MB
+                  </p>
+                </div>
+              ) : (
+                <div className="relative border-2 border-border rounded-lg overflow-hidden">
+                  <img
+                    src={bannerPreview}
+                    alt="Banner preview"
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() =>
+                        document.getElementById("banner-upload")?.click()
+                      }
+                    >
+                      Change
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleRemoveBanner}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                  {bannerFile && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {bannerFile.name} (
+                      {(bannerFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between">
@@ -296,7 +558,9 @@ export default function CreateTournamentPage() {
         <Card className="glass">
           <CardHeader>
             <CardTitle>Rules & Configuration</CardTitle>
-            <CardDescription>Set up tournament rules and point system</CardDescription>
+            <CardDescription>
+              Set up tournament rules and point system
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -320,7 +584,9 @@ export default function CreateTournamentPage() {
                       id="pointsForWin"
                       type="number"
                       value={formData.pointsForWin}
-                      onChange={(e) => handleChange("pointsForWin", e.target.value)}
+                      onChange={(e) =>
+                        handleChange("pointsForWin", e.target.value)
+                      }
                       min="0"
                     />
                   </div>
@@ -330,7 +596,9 @@ export default function CreateTournamentPage() {
                       id="pointsForDraw"
                       type="number"
                       value={formData.pointsForDraw}
-                      onChange={(e) => handleChange("pointsForDraw", e.target.value)}
+                      onChange={(e) =>
+                        handleChange("pointsForDraw", e.target.value)
+                      }
                       min="0"
                     />
                   </div>
@@ -340,7 +608,9 @@ export default function CreateTournamentPage() {
                       id="pointsForLoss"
                       type="number"
                       value={formData.pointsForLoss}
-                      onChange={(e) => handleChange("pointsForLoss", e.target.value)}
+                      onChange={(e) =>
+                        handleChange("pointsForLoss", e.target.value)
+                      }
                       min="0"
                     />
                   </div>
@@ -367,13 +637,17 @@ export default function CreateTournamentPage() {
         <Card className="glass">
           <CardHeader>
             <CardTitle>Review & Submit</CardTitle>
-            <CardDescription>Review your tournament details before creating</CardDescription>
+            <CardDescription>
+              Review your tournament details before creating
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground">Tournament Name:</span>
+                  <span className="text-muted-foreground">
+                    Tournament Name:
+                  </span>
                   <p className="font-medium">{formData.name}</p>
                 </div>
                 <div>
@@ -390,11 +664,17 @@ export default function CreateTournamentPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Start Date:</span>
-                  <p className="font-medium">{formData.startDate ? format(formData.startDate, "PPP") : "-"}</p>
+                  <p className="font-medium">
+                    {formData.startDate
+                      ? format(formData.startDate, "PPP")
+                      : "-"}
+                  </p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">End Date:</span>
-                  <p className="font-medium">{formData.endDate ? format(formData.endDate, "PPP") : "-"}</p>
+                  <p className="font-medium">
+                    {formData.endDate ? format(formData.endDate, "PPP") : "-"}
+                  </p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Teams:</span>
@@ -403,7 +683,9 @@ export default function CreateTournamentPage() {
               </div>
 
               <div>
-                <span className="text-muted-foreground text-sm">Description:</span>
+                <span className="text-muted-foreground text-sm">
+                  Description:
+                </span>
                 <p className="text-sm mt-1">{formData.description}</p>
               </div>
 
@@ -416,18 +698,28 @@ export default function CreateTournamentPage() {
             </div>
 
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(3)}>
+              <Button
+                variant="outline"
+                onClick={() => setStep(3)}
+                disabled={isLoading}
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Previous
               </Button>
-              <Button onClick={handleSubmit} size="lg">
-                <Trophy className="mr-2 h-5 w-5" />
-                Create Tournament
+              <Button onClick={handleSubmit} size="lg" disabled={isLoading}>
+                {isLoading ? (
+                  "Creating..."
+                ) : (
+                  <>
+                    <Trophy className="mr-2 h-5 w-5" />
+                    Create Tournament
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
     </div>
-  )
+  );
 }

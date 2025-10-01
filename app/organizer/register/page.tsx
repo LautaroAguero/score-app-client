@@ -71,7 +71,7 @@ export default function OrganizerRegisterPage() {
 
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/user/register`,
+        `${process.env.NEXT_PUBLIC_API_URL}/user/register`,
         {
           name: formData.name,
           email: formData.email,

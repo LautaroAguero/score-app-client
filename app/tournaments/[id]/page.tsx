@@ -1,46 +1,64 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Calendar, MapPin, Users, Trophy, Share2, Clock, ArrowLeft, TrendingUp, Target } from "lucide-react"
-import Link from "next/link"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import type { Match, Standing } from "@/lib/types"
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import axios from "axios";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Calendar,
+  MapPin,
+  Users,
+  Trophy,
+  Share2,
+  Clock,
+  ArrowLeft,
+  TrendingUp,
+  Target,
+  Loader2,
+} from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import type { Match, Standing } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
-// Mock data
-const mockTournament = {
-  id: "1",
-  name: "Summer Soccer Championship 2025",
-  sport: "Soccer",
-  format: "Knockout",
-  status: "In Progress",
-  startDate: "2025-06-01",
-  endDate: "2025-06-30",
-  location: "New York, USA",
-  description:
-    "The Summer Soccer Championship is the premier soccer tournament featuring top teams from across the nation. This year's edition promises exciting matches, world-class talent, and unforgettable moments.",
-  organizerId: "org1",
-  organizerName: "Elite Sports League",
-  bannerImage: "/soccer-stadium.jpg",
-  teamsCount: 16,
-  currentStage: "Quarter Finals",
-  rules:
-    "Standard FIFA rules apply. Each match consists of two 45-minute halves. In case of a draw, extra time and penalty shootouts will determine the winner.",
-  prizes: "1st Place: $50,000 | 2nd Place: $25,000 | 3rd Place: $10,000",
-  views: 12450,
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
+// Mock data - will be replaced with API data
 const mockMatches: Match[] = [
   {
     id: "m1",
     tournamentId: "1",
-    homeTeam: { id: "t1", name: "Thunder FC", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
-    awayTeam: { id: "t2", name: "Lightning United", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
+    homeTeam: {
+      id: "t1",
+      name: "Thunder FC",
+      logo: "/placeholder.svg?height=40&width=40",
+      tournamentId: "1",
+    },
+    awayTeam: {
+      id: "t2",
+      name: "Lightning United",
+      logo: "/placeholder.svg?height=40&width=40",
+      tournamentId: "1",
+    },
     homeScore: 2,
     awayScore: 1,
     status: "Completed",
@@ -52,8 +70,18 @@ const mockMatches: Match[] = [
   {
     id: "m2",
     tournamentId: "1",
-    homeTeam: { id: "t3", name: "Phoenix Rangers", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
-    awayTeam: { id: "t4", name: "Storm City", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
+    homeTeam: {
+      id: "t3",
+      name: "Phoenix Rangers",
+      logo: "/placeholder.svg?height=40&width=40",
+      tournamentId: "1",
+    },
+    awayTeam: {
+      id: "t4",
+      name: "Storm City",
+      logo: "/placeholder.svg?height=40&width=40",
+      tournamentId: "1",
+    },
     status: "In Progress",
     homeScore: 1,
     awayScore: 1,
@@ -65,8 +93,18 @@ const mockMatches: Match[] = [
   {
     id: "m3",
     tournamentId: "1",
-    homeTeam: { id: "t5", name: "Blaze Athletic", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
-    awayTeam: { id: "t6", name: "Titans FC", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
+    homeTeam: {
+      id: "t5",
+      name: "Blaze Athletic",
+      logo: "/placeholder.svg?height=40&width=40",
+      tournamentId: "1",
+    },
+    awayTeam: {
+      id: "t6",
+      name: "Titans FC",
+      logo: "/placeholder.svg?height=40&width=40",
+      tournamentId: "1",
+    },
     status: "Scheduled",
     date: "2025-06-17",
     time: "19:00",
@@ -76,20 +114,35 @@ const mockMatches: Match[] = [
   {
     id: "m4",
     tournamentId: "1",
-    homeTeam: { id: "t7", name: "Warriors SC", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
-    awayTeam: { id: "t8", name: "Eagles United", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
+    homeTeam: {
+      id: "t7",
+      name: "Warriors SC",
+      logo: "/placeholder.svg?height=40&width=40",
+      tournamentId: "1",
+    },
+    awayTeam: {
+      id: "t8",
+      name: "Eagles United",
+      logo: "/placeholder.svg?height=40&width=40",
+      tournamentId: "1",
+    },
     status: "Scheduled",
     date: "2025-06-17",
     time: "21:00",
     venue: "West Arena",
     stage: "Quarter Finals",
   },
-]
+];
 
 const mockStandings: Standing[] = [
   {
     position: 1,
-    team: { id: "t1", name: "Thunder FC", logo: "/placeholder.svg?height=32&width=32", tournamentId: "1" },
+    team: {
+      id: "t1",
+      name: "Thunder FC",
+      logo: "/placeholder.svg?height=32&width=32",
+      tournamentId: "1",
+    },
     played: 6,
     won: 5,
     drawn: 1,
@@ -101,7 +154,12 @@ const mockStandings: Standing[] = [
   },
   {
     position: 2,
-    team: { id: "t3", name: "Phoenix Rangers", logo: "/placeholder.svg?height=32&width=32", tournamentId: "1" },
+    team: {
+      id: "t3",
+      name: "Phoenix Rangers",
+      logo: "/placeholder.svg?height=32&width=32",
+      tournamentId: "1",
+    },
     played: 6,
     won: 4,
     drawn: 2,
@@ -113,7 +171,12 @@ const mockStandings: Standing[] = [
   },
   {
     position: 3,
-    team: { id: "t5", name: "Blaze Athletic", logo: "/placeholder.svg?height=32&width=32", tournamentId: "1" },
+    team: {
+      id: "t5",
+      name: "Blaze Athletic",
+      logo: "/placeholder.svg?height=32&width=32",
+      tournamentId: "1",
+    },
     played: 6,
     won: 4,
     drawn: 1,
@@ -125,7 +188,12 @@ const mockStandings: Standing[] = [
   },
   {
     position: 4,
-    team: { id: "t7", name: "Warriors SC", logo: "/placeholder.svg?height=32&width=32", tournamentId: "1" },
+    team: {
+      id: "t7",
+      name: "Warriors SC",
+      logo: "/placeholder.svg?height=32&width=32",
+      tournamentId: "1",
+    },
     played: 6,
     won: 3,
     drawn: 2,
@@ -137,7 +205,12 @@ const mockStandings: Standing[] = [
   },
   {
     position: 5,
-    team: { id: "t2", name: "Lightning United", logo: "/placeholder.svg?height=32&width=32", tournamentId: "1" },
+    team: {
+      id: "t2",
+      name: "Lightning United",
+      logo: "/placeholder.svg?height=32&width=32",
+      tournamentId: "1",
+    },
     played: 6,
     won: 2,
     drawn: 2,
@@ -147,7 +220,7 @@ const mockStandings: Standing[] = [
     goalDifference: 0,
     points: 8,
   },
-]
+];
 
 const topScorers = [
   { player: "Marcus Johnson", team: "Thunder FC", goals: 8 },
@@ -155,41 +228,120 @@ const topScorers = [
   { player: "David Chen", team: "Blaze Athletic", goals: 6 },
   { player: "James Wilson", team: "Warriors SC", goals: 5 },
   { player: "Carlos Martinez", team: "Lightning United", goals: 5 },
-]
+];
 
 export default function TournamentDetailPage() {
-  const [activeTab, setActiveTab] = useState("overview")
+  const params = useParams();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [tournament, setTournament] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchTournament();
+  }, [params.id]);
+
+  const fetchTournament = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_URL}/tournaments/${params.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setTournament(response.data.tournament);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const message =
+          err.response?.data?.message || "Failed to load tournament";
+        setError(message);
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleShare = () => {
-    if (navigator.share) {
+    if (navigator.share && tournament) {
       navigator.share({
-        title: mockTournament.name,
-        text: mockTournament.description,
+        title: tournament.name,
+        text: tournament.description,
         url: window.location.href,
-      })
+      });
     }
-  }
+  };
 
   const statusColors = {
     Upcoming: "bg-blue-500",
     "In Progress": "bg-green-500",
     Completed: "bg-gray-500",
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-accent" />
+          <p className="text-muted-foreground">Loading tournament...</p>
+        </div>
+      </div>
+    );
   }
+
+  if (error || !tournament) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Trophy className="h-12 w-12 mx-auto text-muted-foreground" />
+          <h2 className="text-2xl font-bold">Tournament Not Found</h2>
+          <p className="text-muted-foreground">
+            {error || "The tournament you're looking for doesn't exist."}
+          </p>
+          <Button onClick={() => router.push("/tournaments")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Tournaments
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Use mockTournament structure but with real data
+  const mockTournament = tournament;
 
   return (
     <div className="min-h-screen">
       {/* Hero Banner */}
       <div className="relative h-[400px] overflow-hidden">
         <img
-          src={mockTournament.bannerImage || "/placeholder.svg"}
-          alt={mockTournament.name}
+          src={
+            tournament.tournamentBanner
+              ? `${API_BASE_URL}${tournament.tournamentBanner}`
+              : "/placeholder.svg"
+          }
+          alt={tournament.name}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
         <div className="absolute inset-0 flex items-end">
           <div className="container mx-auto px-4 pb-8">
-            <Button variant="ghost" size="sm" className="mb-4 text-white hover:text-white" asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mb-4 text-white hover:text-white"
+              asChild
+            >
               <Link href="/tournaments">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Tournaments
@@ -197,37 +349,52 @@ export default function TournamentDetailPage() {
             </Button>
 
             <div className="flex flex-wrap gap-2 mb-4">
-              <Badge variant="secondary" className="bg-accent text-accent-foreground">
-                {mockTournament.sport}
+              <Badge
+                variant="secondary"
+                className="bg-accent text-accent-foreground"
+              >
+                {tournament.sportType || tournament.sport}
               </Badge>
-              <Badge variant="secondary" className={cn("text-white", statusColors[mockTournament.status])}>
-                {mockTournament.status}
+              <Badge
+                variant="secondary"
+                className={cn("text-white", statusColors[tournament.status])}
+              >
+                {tournament.status}
               </Badge>
-              <Badge variant="secondary" className="bg-white/20 text-white backdrop-blur-sm">
-                {mockTournament.format}
+              <Badge
+                variant="secondary"
+                className="bg-white/20 text-white backdrop-blur-sm"
+              >
+                {tournament.tournamentFormat || tournament.format}
               </Badge>
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">{mockTournament.name}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              {tournament.name}
+            </h1>
 
             <div className="flex flex-wrap gap-6 text-white/90 text-sm mb-4">
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                {mockTournament.location}
+                {tournament.location}
               </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                {format(new Date(mockTournament.startDate), "MMM dd")} -{" "}
-                {format(new Date(mockTournament.endDate), "MMM dd, yyyy")}
-              </div>
+              {tournament.startDate && tournament.endDate && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  {format(new Date(tournament.startDate), "MMM dd")} -{" "}
+                  {format(new Date(tournament.endDate), "MMM dd, yyyy")}
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                {mockTournament.teamsCount} Teams
+                {tournament.numberOfParticipants || tournament.teamsCount} Teams
               </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                {mockTournament.currentStage}
-              </div>
+              {tournament.currentStage && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  {tournament.currentStage}
+                </div>
+              )}
             </div>
 
             <Button variant="secondary" onClick={handleShare}>
@@ -240,7 +407,11 @@ export default function TournamentDetailPage() {
 
       {/* Content */}
       <div className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
           <TabsList className="glass-strong w-full justify-start overflow-x-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="matches">Matches</TabsTrigger>
@@ -258,27 +429,37 @@ export default function TournamentDetailPage() {
                     <CardTitle>About Tournament</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-muted-foreground leading-relaxed">{mockTournament.description}</p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {tournament.description}
+                    </p>
                   </CardContent>
                 </Card>
 
-                <Card className="glass">
-                  <CardHeader>
-                    <CardTitle>Rules & Format</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground leading-relaxed">{mockTournament.rules}</p>
-                  </CardContent>
-                </Card>
+                {tournament.rules && (
+                  <Card className="glass">
+                    <CardHeader>
+                      <CardTitle>Rules & Format</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {tournament.rules}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
 
-                <Card className="glass">
-                  <CardHeader>
-                    <CardTitle>Prizes</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground leading-relaxed">{mockTournament.prizes}</p>
-                  </CardContent>
-                </Card>
+                {tournament.prizes && (
+                  <Card className="glass">
+                    <CardHeader>
+                      <CardTitle>Prizes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {tournament.prizes}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               <div className="space-y-6">
@@ -287,22 +468,44 @@ export default function TournamentDetailPage() {
                     <CardTitle className="text-lg">Tournament Info</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {tournament.organizer && (
+                      <div>
+                        <div className="text-sm text-muted-foreground mb-1">
+                          Organizer
+                        </div>
+                        <div className="font-medium">
+                          {tournament.organizer.name}
+                        </div>
+                      </div>
+                    )}
                     <div>
-                      <div className="text-sm text-muted-foreground mb-1">Organizer</div>
-                      <div className="font-medium">{mockTournament.organizerName}</div>
+                      <div className="text-sm text-muted-foreground mb-1">
+                        Format
+                      </div>
+                      <div className="font-medium">
+                        {tournament.tournamentFormat || tournament.format}
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground mb-1">Format</div>
-                      <div className="font-medium">{mockTournament.format}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground mb-1">Current Stage</div>
-                      <div className="font-medium">{mockTournament.currentStage}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground mb-1">Total Views</div>
-                      <div className="font-medium">{mockTournament.views.toLocaleString()}</div>
-                    </div>
+                    {tournament.currentStage && (
+                      <div>
+                        <div className="text-sm text-muted-foreground mb-1">
+                          Current Stage
+                        </div>
+                        <div className="font-medium">
+                          {tournament.currentStage}
+                        </div>
+                      </div>
+                    )}
+                    {tournament.views !== undefined && (
+                      <div>
+                        <div className="text-sm text-muted-foreground mb-1">
+                          Total Views
+                        </div>
+                        <div className="font-medium">
+                          {tournament.views.toLocaleString()}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -314,21 +517,46 @@ export default function TournamentDetailPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    {tournament.matchesTotal !== undefined && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Total Matches
+                        </span>
+                        <span className="font-semibold">
+                          {tournament.matchesTotal}
+                        </span>
+                      </div>
+                    )}
+                    {tournament.matchesCompleted !== undefined && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Completed
+                        </span>
+                        <span className="font-semibold">
+                          {tournament.matchesCompleted}
+                        </span>
+                      </div>
+                    )}
+                    {tournament.matchesTotal !== undefined &&
+                      tournament.matchesCompleted !== undefined && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">
+                            Remaining
+                          </span>
+                          <span className="font-semibold">
+                            {tournament.matchesTotal -
+                              tournament.matchesCompleted}
+                          </span>
+                        </div>
+                      )}
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Total Matches</span>
-                      <span className="font-semibold">32</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Completed</span>
-                      <span className="font-semibold">24</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Remaining</span>
-                      <span className="font-semibold">8</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Total Goals</span>
-                      <span className="font-semibold">87</span>
+                      <span className="text-sm text-muted-foreground">
+                        Participants
+                      </span>
+                      <span className="font-semibold">
+                        {tournament.numberOfParticipants ||
+                          tournament.teamsCount}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -341,7 +569,9 @@ export default function TournamentDetailPage() {
             <Card className="glass">
               <CardHeader>
                 <CardTitle>Tournament Matches</CardTitle>
-                <CardDescription>View all scheduled, ongoing, and completed matches</CardDescription>
+                <CardDescription>
+                  View all scheduled, ongoing, and completed matches
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {mockMatches.map((match) => (
@@ -356,7 +586,9 @@ export default function TournamentDetailPage() {
             <Card className="glass">
               <CardHeader>
                 <CardTitle>Tournament Standings</CardTitle>
-                <CardDescription>Current leaderboard and team statistics</CardDescription>
+                <CardDescription>
+                  Current leaderboard and team statistics
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -372,14 +604,23 @@ export default function TournamentDetailPage() {
                         <TableHead className="text-center">GF</TableHead>
                         <TableHead className="text-center">GA</TableHead>
                         <TableHead className="text-center">GD</TableHead>
-                        <TableHead className="text-center font-semibold">Pts</TableHead>
+                        <TableHead className="text-center font-semibold">
+                          Pts
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {mockStandings.map((standing) => (
-                        <TableRow key={standing.team.id} className={cn(standing.position === 1 && "bg-accent/5")}>
+                        <TableRow
+                          key={standing.team.id}
+                          className={cn(
+                            standing.position === 1 && "bg-accent/5"
+                          )}
+                        >
                           <TableCell className="font-medium">
-                            {standing.position === 1 && <Trophy className="h-4 w-4 text-accent inline mr-1" />}
+                            {standing.position === 1 && (
+                              <Trophy className="h-4 w-4 text-accent inline mr-1" />
+                            )}
                             {standing.position}
                           </TableCell>
                           <TableCell>
@@ -389,17 +630,35 @@ export default function TournamentDetailPage() {
                                 alt={standing.team.name}
                                 className="h-6 w-6 rounded-full"
                               />
-                              <span className="font-medium">{standing.team.name}</span>
+                              <span className="font-medium">
+                                {standing.team.name}
+                              </span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-center">{standing.played}</TableCell>
-                          <TableCell className="text-center">{standing.won}</TableCell>
-                          <TableCell className="text-center">{standing.drawn}</TableCell>
-                          <TableCell className="text-center">{standing.lost}</TableCell>
-                          <TableCell className="text-center">{standing.goalsFor}</TableCell>
-                          <TableCell className="text-center">{standing.goalsAgainst}</TableCell>
-                          <TableCell className="text-center">{standing.goalDifference}</TableCell>
-                          <TableCell className="text-center font-bold">{standing.points}</TableCell>
+                          <TableCell className="text-center">
+                            {standing.played}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {standing.won}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {standing.drawn}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {standing.lost}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {standing.goalsFor}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {standing.goalsAgainst}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {standing.goalDifference}
+                          </TableCell>
+                          <TableCell className="text-center font-bold">
+                            {standing.points}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -422,23 +681,30 @@ export default function TournamentDetailPage() {
                 <CardContent>
                   <div className="space-y-4">
                     {topScorers.map((scorer, index) => (
-                      <div key={index} className="flex items-center justify-between">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center gap-3">
                           <div
                             className={cn(
                               "h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm",
                               index === 0 && "bg-accent text-accent-foreground",
-                              index !== 0 && "bg-muted",
+                              index !== 0 && "bg-muted"
                             )}
                           >
                             {index + 1}
                           </div>
                           <div>
                             <div className="font-medium">{scorer.player}</div>
-                            <div className="text-sm text-muted-foreground">{scorer.team}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {scorer.team}
+                            </div>
                           </div>
                         </div>
-                        <div className="text-2xl font-bold text-accent">{scorer.goals}</div>
+                        <div className="text-2xl font-bold text-accent">
+                          {scorer.goals}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -456,38 +722,58 @@ export default function TournamentDetailPage() {
                   <div className="space-y-3">
                     <div>
                       <div className="flex justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Average Goals per Match</span>
+                        <span className="text-sm text-muted-foreground">
+                          Average Goals per Match
+                        </span>
                         <span className="font-semibold">2.7</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-accent" style={{ width: "67.5%" }} />
+                        <div
+                          className="h-full bg-accent"
+                          style={{ width: "67.5%" }}
+                        />
                       </div>
                     </div>
                     <div>
                       <div className="flex justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Clean Sheets</span>
+                        <span className="text-sm text-muted-foreground">
+                          Clean Sheets
+                        </span>
                         <span className="font-semibold">12</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-accent" style={{ width: "50%" }} />
+                        <div
+                          className="h-full bg-accent"
+                          style={{ width: "50%" }}
+                        />
                       </div>
                     </div>
                     <div>
                       <div className="flex justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Yellow Cards</span>
+                        <span className="text-sm text-muted-foreground">
+                          Yellow Cards
+                        </span>
                         <span className="font-semibold">45</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-yellow-500" style={{ width: "75%" }} />
+                        <div
+                          className="h-full bg-yellow-500"
+                          style={{ width: "75%" }}
+                        />
                       </div>
                     </div>
                     <div>
                       <div className="flex justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Red Cards</span>
+                        <span className="text-sm text-muted-foreground">
+                          Red Cards
+                        </span>
                         <span className="font-semibold">3</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-red-500" style={{ width: "15%" }} />
+                        <div
+                          className="h-full bg-red-500"
+                          style={{ width: "15%" }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -511,7 +797,7 @@ export default function TournamentDetailPage() {
         </Tabs>
       </div>
     </div>
-  )
+  );
 }
 
 function MatchCard({ match }: { match: Match }) {
@@ -521,7 +807,7 @@ function MatchCard({ match }: { match: Match }) {
     Completed: "bg-gray-500",
     Postponed: "bg-yellow-500",
     Cancelled: "bg-red-500",
-  }
+  };
 
   return (
     <div className="glass-strong rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -531,7 +817,11 @@ function MatchCard({ match }: { match: Match }) {
             <Badge variant="outline" className="text-xs">
               {match.stage}
             </Badge>
-            <Badge className={cn("text-xs text-white", statusColors[match.status])}>{match.status}</Badge>
+            <Badge
+              className={cn("text-xs text-white", statusColors[match.status])}
+            >
+              {match.status}
+            </Badge>
           </div>
 
           <div className="space-y-2">
@@ -545,7 +835,9 @@ function MatchCard({ match }: { match: Match }) {
                 <span className="font-medium">{match.homeTeam.name}</span>
               </div>
               {match.homeScore !== undefined && (
-                <span className="text-2xl font-bold w-12 text-center">{match.homeScore}</span>
+                <span className="text-2xl font-bold w-12 text-center">
+                  {match.homeScore}
+                </span>
               )}
             </div>
 
@@ -559,7 +851,9 @@ function MatchCard({ match }: { match: Match }) {
                 <span className="font-medium">{match.awayTeam.name}</span>
               </div>
               {match.awayScore !== undefined && (
-                <span className="text-2xl font-bold w-12 text-center">{match.awayScore}</span>
+                <span className="text-2xl font-bold w-12 text-center">
+                  {match.awayScore}
+                </span>
               )}
             </div>
           </div>
@@ -581,7 +875,7 @@ function MatchCard({ match }: { match: Match }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function BracketView() {
@@ -664,5 +958,5 @@ function BracketView() {
         </div>
       </div>
     </div>
-  )
+  );
 }
