@@ -3,74 +3,58 @@
 @tailwind utilities;
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.205 0 0);
-  --card: oklch(0.99 0 0 / 0.8);
-  --card-foreground: oklch(0.205 0 0);
-  --popover: oklch(0.99 0 0 / 0.9);
-  --popover-foreground: oklch(0.205 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.62 0.22 293);
-  --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.52 0 0);
-  --accent: oklch(0.62 0.22 293);
-  --accent-foreground: oklch(1 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.92 0 0);
-  --input: oklch(0.96 0 0);
-  --ring: oklch(0.62 0.22 293 / 0.5);
-  --chart-1: oklch(0.62 0.22 293);
-  --chart-2: oklch(0.205 0 0);
-  --chart-3: oklch(0.45 0 0);
-  --chart-4: oklch(0.96 0 0);
-  --chart-5: oklch(0.98 0 0);
+  --background: 0 0% 100%;
+  --foreground: 0 0% 20%;
+  --card: 0 0% 99%;
+  --card-foreground: 0 0% 20%;
+  --popover: 0 0% 99%;
+  --popover-foreground: 0 0% 20%;
+  --primary: 0 0% 20%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 217 91% 60%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 52%;
+  --accent: 217 91% 60%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 92%;
+  --input: 0 0% 96%;
+  --ring: 217 91% 60%;
+  --chart-1: 217 91% 60%;
+  --chart-2: 0 0% 20%;
+  --chart-3: 0 0% 45%;
+  --chart-4: 0 0% 96%;
+  --chart-5: 0 0% 98%;
   --radius: 0.5rem;
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.205 0 0);
-  --sidebar-primary: oklch(0.96 0 0);
-  --sidebar-primary-foreground: oklch(0.205 0 0);
-  --sidebar-accent: oklch(0.62 0.22 293);
-  --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.92 0 0);
-  --sidebar-ring: oklch(0.62 0.22 293 / 0.5);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.18 0 0 / 0.8);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.18 0 0 / 0.9);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.62 0.22 293);
-  --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.62 0.22 293);
-  --accent-foreground: oklch(1 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.62 0.22 293 / 0.5);
-  --chart-1: oklch(0.62 0.22 293);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.62 0.22 293);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.62 0.22 293 / 0.5);
+  --background: 0 0% 14.5%;
+  --foreground: 0 0% 98.5%;
+  --card: 0 0% 18%;
+  --card-foreground: 0 0% 98.5%;
+  --popover: 0 0% 18%;
+  --popover-foreground: 0 0% 98.5%;
+  --primary: 0 0% 98.5%;
+  --primary-foreground: 0 0% 20%;
+  --secondary: 217 91% 60%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 27%;
+  --muted-foreground: 0 0% 71%;
+  --accent: 217 91% 60%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 98.5%;
+  --border: 0 0% 27%;
+  --input: 0 0% 27%;
+  --ring: 217 91% 60%;
+  --chart-1: 217 91% 60%;
+  --chart-2: 162 17% 70%;
+  --chart-3: 70 19% 77%;
+  --chart-4: 304 27% 63%;
+  --chart-5: 16 25% 65%;
 }
 
 @layer base {
@@ -84,14 +68,12 @@
 
 @layer utilities {
   .glass {
-    @apply backdrop-blur-md border;
-    background-color: color-mix(in srgb, var(--card), transparent 20%);
-    border-color: color-mix(in srgb, var(--border), transparent 50%);
+    @apply backdrop-blur-md border border-border/50;
+    background-color: hsl(var(--card) / 0.8);
   }
 
   .glass-strong {
-    @apply backdrop-blur-lg border;
-    background-color: color-mix(in srgb, var(--card), transparent 10%);
-    border-color: color-mix(in srgb, var(--border), transparent 40%);
+    @apply backdrop-blur-lg border border-border/60;
+    background-color: hsl(var(--card) / 0.9);
   }
 }

@@ -1,34 +1,79 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Trophy, Mail, Lock, ArrowRight } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Trophy, Mail, Lock, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { useToast } from "@/hooks/use-toast";
 
 export default function OrganizerLoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [rememberMe, setRememberMe] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false)
-      router.push("/organizer/dashboard")
-    }, 1000)
-  }
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/user/login`,
+        {
+          email,
+          password,
+        }
+      );
+
+      // Si el login es exitoso
+      if (response.data) {
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+
+        // Guardar el token si viene en la respuesta
+        if (response.data.token) {
+          localStorage.setItem("token", response.data.token);
+        }
+
+        router.push("/organizer/dashboard");
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Login failed",
+          description:
+            error.response?.data?.message || "Invalid email or password",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -42,13 +87,17 @@ export default function OrganizerLoginPage() {
             <Trophy className="h-8 w-8 text-accent-foreground" />
           </div>
           <h1 className="text-3xl font-bold mb-2">Organizer Login</h1>
-          <p className="text-muted-foreground">Sign in to manage your tournaments</p>
+          <p className="text-muted-foreground">
+            Sign in to manage your tournaments
+          </p>
         </div>
 
         <Card className="glass-strong">
           <CardHeader>
             <CardTitle>Welcome Back</CardTitle>
-            <CardDescription>Enter your credentials to access your dashboard</CardDescription>
+            <CardDescription>
+              Enter your credentials to access your dashboard
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -89,13 +138,18 @@ export default function OrganizerLoginPage() {
                   <Checkbox
                     id="remember"
                     checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      setRememberMe(checked as boolean)
+                    }
                   />
                   <label htmlFor="remember" className="text-sm cursor-pointer">
                     Remember me
                   </label>
                 </div>
-                <Link href="/organizer/forgot-password" className="text-sm text-accent hover:underline">
+                <Link
+                  href="/organizer/forgot-password"
+                  className="text-sm text-accent hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -107,8 +161,13 @@ export default function OrganizerLoginPage() {
             </form>
 
             <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">Don't have an account? </span>
-              <Link href="/organizer/register" className="text-accent hover:underline font-medium">
+              <span className="text-muted-foreground">
+                Don't have an account?{" "}
+              </span>
+              <Link
+                href="/organizer/register"
+                className="text-accent hover:underline font-medium"
+              >
                 Register as Organizer
               </Link>
             </div>
@@ -122,5 +181,5 @@ export default function OrganizerLoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

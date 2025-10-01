@@ -1,20 +1,38 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Trophy, Mail, Lock, User, Building, Phone, ArrowRight, CheckCircle2 } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Trophy,
+  Mail,
+  Lock,
+  User,
+  Building,
+  Phone,
+  ArrowRight,
+  CheckCircle2,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { useToast } from "@/hooks/use-toast";
 
 export default function OrganizerRegisterPage() {
-  const router = useRouter()
+  const router = useRouter();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,33 +41,89 @@ export default function OrganizerRegisterPage() {
     organization: "",
     phone: "",
     experience: "",
-  })
-  const [agreedToTerms, setAgreedToTerms] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
+
+    // Validaciones
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match")
-      return
+      toast({
+        title: "Password mismatch",
+        description: "Passwords do not match. Please try again.",
+        variant: "destructive",
+      });
+      return;
     }
+
     if (!agreedToTerms) {
-      alert("Please agree to the terms and conditions")
-      return
+      toast({
+        title: "Terms required",
+        description: "Please agree to the terms and conditions",
+        variant: "destructive",
+      });
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
-    // Simulate registration
-    setTimeout(() => {
-      setIsLoading(false)
-      router.push("/organizer/dashboard")
-    }, 1500)
-  }
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/user/register`,
+        {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          organization: formData.organization || undefined,
+          phone: formData.phone || undefined,
+          experience: formData.experience || undefined,
+        }
+      );
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+      // Si el registro es exitoso
+      if (response.data) {
+        toast({
+          title: "Registration successful",
+          description: "Your account has been created successfully!",
+        });
+
+        // Guardar el token si viene en la respuesta
+        if (response.data.token) {
+          localStorage.setItem("token", response.data.token);
+        }
+
+        // Redirigir al dashboard o login
+        router.push("/organizer/dashboard");
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.message ||
+          "Registration failed. Please try again.";
+        toast({
+          title: "Registration failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const benefits = [
     "Create and manage unlimited tournaments",
@@ -58,7 +132,7 @@ export default function OrganizerRegisterPage() {
     "Team and player management tools",
     "Analytics and engagement metrics",
     "Professional tournament pages",
-  ]
+  ];
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -71,7 +145,9 @@ export default function OrganizerRegisterPage() {
             <Trophy className="h-8 w-8 text-accent-foreground" />
           </div>
           <h1 className="text-3xl font-bold mb-2">Become an Organizer</h1>
-          <p className="text-muted-foreground">Join thousands of organizers managing professional tournaments</p>
+          <p className="text-muted-foreground">
+            Join thousands of organizers managing professional tournaments
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -79,7 +155,9 @@ export default function OrganizerRegisterPage() {
           <div className="lg:col-span-1">
             <Card className="glass-strong sticky top-24">
               <CardHeader>
-                <CardTitle className="text-lg">Why Join TournamentPro?</CardTitle>
+                <CardTitle className="text-lg">
+                  Why Join TournamentPro?
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
@@ -99,7 +177,9 @@ export default function OrganizerRegisterPage() {
             <Card className="glass-strong">
               <CardHeader>
                 <CardTitle>Create Your Account</CardTitle>
-                <CardDescription>Fill in your details to get started</CardDescription>
+                <CardDescription>
+                  Fill in your details to get started
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -157,7 +237,9 @@ export default function OrganizerRegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                      <Label htmlFor="confirmPassword">
+                        Confirm Password *
+                      </Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <Input
@@ -223,29 +305,50 @@ export default function OrganizerRegisterPage() {
                     <Checkbox
                       id="terms"
                       checked={agreedToTerms}
-                      onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                      onCheckedChange={(checked) =>
+                        setAgreedToTerms(checked as boolean)
+                      }
                     />
-                    <label htmlFor="terms" className="text-sm cursor-pointer leading-relaxed">
+                    <label
+                      htmlFor="terms"
+                      className="text-sm cursor-pointer leading-relaxed"
+                    >
                       I agree to the{" "}
-                      <Link href="/terms" className="text-accent hover:underline">
+                      <Link
+                        href="/terms"
+                        className="text-accent hover:underline"
+                      >
                         Terms and Conditions
                       </Link>{" "}
                       and{" "}
-                      <Link href="/privacy" className="text-accent hover:underline">
+                      <Link
+                        href="/privacy"
+                        className="text-accent hover:underline"
+                      >
                         Privacy Policy
                       </Link>
                     </label>
                   </div>
 
-                  <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    size="lg"
+                    disabled={isLoading}
+                  >
                     {isLoading ? "Creating Account..." : "Create Account"}
                     {!isLoading && <ArrowRight className="ml-2 h-5 w-5" />}
                   </Button>
                 </form>
 
                 <div className="mt-6 text-center text-sm">
-                  <span className="text-muted-foreground">Already have an account? </span>
-                  <Link href="/organizer/login" className="text-accent hover:underline font-medium">
+                  <span className="text-muted-foreground">
+                    Already have an account?{" "}
+                  </span>
+                  <Link
+                    href="/organizer/login"
+                    className="text-accent hover:underline font-medium"
+                  >
                     Sign In
                   </Link>
                 </div>
@@ -255,5 +358,5 @@ export default function OrganizerRegisterPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
