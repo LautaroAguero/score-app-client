@@ -359,9 +359,7 @@ export default function OrganizerDashboardPage() {
                         </Link>
                       </Button>
                       <Button variant="outline" size="sm" asChild>
-                        <Link
-                          href={`/organizer/dashboard/tournaments/${tournament._id}/edit`}
-                        >
+                        <Link href={`/tournaments/${tournament._id}/edit`}>
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </Link>

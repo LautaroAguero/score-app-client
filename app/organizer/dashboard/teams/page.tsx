@@ -1,10 +1,19 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import axios from "axios";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -12,62 +21,309 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, Edit, Trash2, Upload, Users } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Upload,
+  Users,
+  Loader2,
+  X,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
-const mockTeams = [
-  {
-    id: "t1",
-    name: "Thunder FC",
-    logo: "/placeholder.svg?height=48&width=48",
-    tournament: "Summer Soccer Championship",
-    tournamentId: "1",
-    players: 18,
-    group: "Group A",
-  },
-  {
-    id: "t2",
-    name: "Lightning United",
-    logo: "/placeholder.svg?height=48&width=48",
-    tournament: "Summer Soccer Championship",
-    tournamentId: "1",
-    players: 20,
-    group: "Group A",
-  },
-  {
-    id: "t3",
-    name: "Phoenix Rangers",
-    logo: "/placeholder.svg?height=48&width=48",
-    tournament: "Summer Soccer Championship",
-    tournamentId: "1",
-    players: 19,
-    group: "Group B",
-  },
-]
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+interface Team {
+  _id: string;
+  name: string;
+  logo?: string;
+  teamLogo?: string;
+  tournament: {
+    _id: string;
+    name: string;
+  };
+  group?: string;
+  players?: number;
+}
+
+interface Tournament {
+  _id: string;
+  name: string;
+}
 
 export default function TeamManagementPage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedTournament, setSelectedTournament] = useState("all")
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTournament, setSelectedTournament] = useState("all");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [newTeam, setNewTeam] = useState({
     name: "",
-    tournament: "",
+    tournamentId: "",
     group: "",
-  })
+  });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const filteredTeams = mockTeams.filter((team) => {
-    const matchesSearch = team.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTournament = selectedTournament === "all" || team.tournamentId === selectedTournament
-    return matchesSearch && matchesTournament
-  })
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const handleAddTeam = () => {
-    console.log("Adding team:", newTeam)
-    setIsAddDialogOpen(false)
-    setNewTeam({ name: "", tournament: "", group: "" })
-  }
+  const fetchData = async () => {
+    await Promise.all([fetchTournaments(), fetchTeams()]);
+  };
+
+  const fetchTournaments = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to view tournaments",
+          variant: "destructive",
+        });
+        router.push("/organizer/login");
+        return;
+      }
+
+      const response = await axios.get(
+        `${API_URL}/tournaments/my-tournaments`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setTournaments(response.data.tournaments || []);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error loading tournaments",
+          description:
+            error.response?.data?.message || "Failed to load tournaments",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const fetchTeams = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.get(`${API_URL}/teams`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setTeams(response.data.teams || []);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error loading teams",
+          description: error.response?.data?.message || "Failed to load teams",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFileSelect = (file: File) => {
+    if (file && file.type.startsWith("image/")) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file (PNG, JPG, etc.)",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const removeLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+  };
+
+  const filteredTeams = teams.filter((team) => {
+    const matchesSearch = team.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesTournament =
+      selectedTournament === "all" ||
+      team.tournament._id === selectedTournament;
+    return matchesSearch && matchesTournament;
+  });
+
+  const handleAddTeam = async () => {
+    if (!newTeam.name || !newTeam.tournamentId) {
+      toast({
+        title: "Missing required fields",
+        description: "Please fill in team name and select a tournament",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem("token");
+
+      const formData = new FormData();
+      formData.append("name", newTeam.name);
+      formData.append("tournament", newTeam.tournamentId);
+      if (newTeam.group) {
+        formData.append("group", newTeam.group);
+      }
+      if (logoFile) {
+        formData.append("teamLogo", logoFile);
+      }
+
+      const response = await axios.post(`${API_URL}/teams`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      toast({
+        title: "Team added",
+        description: `${newTeam.name} has been successfully added.`,
+      });
+
+      // Add new team to the list
+      setTeams([...teams, response.data.team]);
+
+      // Reset form
+      setIsAddDialogOpen(false);
+      setNewTeam({ name: "", tournamentId: "", group: "" });
+      setLogoFile(null);
+      setLogoPreview(null);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error adding team",
+          description: error.response?.data?.message || "Failed to add team",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteClick = (team: Team) => {
+    setTeamToDelete(team);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!teamToDelete) return;
+    console.log(teamToDelete);
+    try {
+      setIsDeleting(true);
+      const token = localStorage.getItem("token");
+
+      await axios.delete(`${API_URL}/teams/${teamToDelete.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      toast({
+        title: "Team deleted",
+        description: `${teamToDelete.name} has been successfully deleted.`,
+      });
+
+      // Remove team from the list
+      setTeams(teams.filter((t) => t._id !== teamToDelete._id));
+      setIsDeleteDialogOpen(false);
+      setTeamToDelete(null);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error deleting team",
+          description: error.response?.data?.message || "Failed to delete team",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setIsDeleteDialogOpen(false);
+    setTeamToDelete(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -75,7 +331,9 @@ export default function TeamManagementPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-2">Team Management</h1>
-          <p className="text-muted-foreground">Add and organize teams for your tournaments</p>
+          <p className="text-muted-foreground">
+            Add and organize teams for your tournaments
+          </p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -87,7 +345,9 @@ export default function TeamManagementPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Team</DialogTitle>
-              <DialogDescription>Enter the team details to add them to a tournament</DialogDescription>
+              <DialogDescription>
+                Enter the team details to add them to a tournament
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -96,22 +356,35 @@ export default function TeamManagementPage() {
                   id="teamName"
                   placeholder="e.g., Thunder FC"
                   value={newTeam.name}
-                  onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewTeam({ ...newTeam, name: e.target.value })
+                  }
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="tournament">Tournament *</Label>
                 <Select
-                  value={newTeam.tournament}
-                  onValueChange={(value) => setNewTeam({ ...newTeam, tournament: value })}
+                  value={newTeam.tournamentId}
+                  onValueChange={(value) =>
+                    setNewTeam({ ...newTeam, tournamentId: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select tournament" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Summer Soccer Championship</SelectItem>
-                    <SelectItem value="2">City Basketball League</SelectItem>
+                    {tournaments.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        No tournaments available
+                      </div>
+                    ) : (
+                      tournaments.map((tournament) => (
+                        <SelectItem key={tournament._id} value={tournament._id}>
+                          {tournament.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -122,26 +395,85 @@ export default function TeamManagementPage() {
                   id="group"
                   placeholder="e.g., Group A"
                   value={newTeam.group}
-                  onChange={(e) => setNewTeam({ ...newTeam, group: e.target.value })}
+                  onChange={(e) =>
+                    setNewTeam({ ...newTeam, group: e.target.value })
+                  }
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Team Logo (Optional)</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-accent transition-colors cursor-pointer">
-                  <Upload className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground">Upload team logo</p>
-                </div>
+                {logoPreview ? (
+                  <div className="relative">
+                    <img
+                      src={logoPreview}
+                      alt="Logo preview"
+                      className="w-24 h-24 object-cover rounded-lg mx-auto"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-0 right-0"
+                      onClick={removeLogo}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+                      isDragging
+                        ? "border-accent bg-accent/10"
+                        : "border-border hover:border-accent"
+                    )}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() =>
+                      document.getElementById("logo-upload")?.click()
+                    }
+                  >
+                    <Upload className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground">
+                      Drag and drop or click to upload
+                    </p>
+                    <input
+                      id="logo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileInputChange}
+                      className="hidden"
+                    />
+                  </div>
+                )}
               </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsAddDialogOpen(false)}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleAddTeam} disabled={!newTeam.name || !newTeam.tournament}>
-                Add Team
+              <Button
+                onClick={handleAddTeam}
+                disabled={
+                  !newTeam.name || !newTeam.tournamentId || isSubmitting
+                }
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Team"
+                )}
               </Button>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -160,14 +492,20 @@ export default function TeamManagementPage() {
                 className="pl-10"
               />
             </div>
-            <Select value={selectedTournament} onValueChange={setSelectedTournament}>
+            <Select
+              value={selectedTournament}
+              onValueChange={setSelectedTournament}
+            >
               <SelectTrigger className="w-full md:w-[250px]">
                 <SelectValue placeholder="Filter by tournament" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Tournaments</SelectItem>
-                <SelectItem value="1">Summer Soccer Championship</SelectItem>
-                <SelectItem value="2">City Basketball League</SelectItem>
+                {tournaments.map((tournament) => (
+                  <SelectItem key={tournament._id} value={tournament._id}>
+                    {tournament.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -175,57 +513,136 @@ export default function TeamManagementPage() {
       </Card>
 
       {/* Teams Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTeams.map((team) => (
-          <Card key={team.id} className="glass hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <img src={team.logo || "/placeholder.svg"} alt={team.name} className="h-12 w-12 rounded-full" />
-                  <div>
-                    <CardTitle className="text-lg">{team.name}</CardTitle>
-                    <CardDescription className="text-sm">{team.tournament}</CardDescription>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Group:</span>
-                <Badge variant="outline">{team.group}</Badge>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Players:</span>
-                <span className="font-medium flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  {team.players}
-                </span>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1 bg-transparent">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
-                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive bg-transparent">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredTeams.length === 0 && (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+          <span className="ml-2 text-muted-foreground">Loading teams...</span>
+        </div>
+      ) : filteredTeams.length === 0 ? (
         <Card className="glass p-12 text-center">
           <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-xl font-semibold mb-2">No teams found</h3>
-          <p className="text-muted-foreground mb-4">Add teams to your tournaments to get started</p>
+          <p className="text-muted-foreground mb-4">
+            {searchQuery || selectedTournament !== "all"
+              ? "Try adjusting your filters"
+              : "Add teams to your tournaments to get started"}
+          </p>
           <Button onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Team
           </Button>
         </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTeams.map((team) => (
+            <Card
+              key={team._id}
+              className="glass hover:shadow-lg transition-shadow"
+            >
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-12 w-12 rounded-full overflow-hidden">
+                      <Image
+                        src={
+                          team.teamLogo
+                            ? `http://localhost:4000${team.teamLogo}`
+                            : "/placeholder.svg"
+                        }
+                        alt={team.name}
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{team.name}</CardTitle>
+                      <CardDescription className="text-sm">
+                        {team.tournament.name}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {team.group && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Group:</span>
+                    <Badge variant="outline">{team.group}</Badge>
+                  </div>
+                )}
+                {team.players !== undefined && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Players:</span>
+                    <span className="font-medium flex items-center gap-1">
+                      <Users className="h-4 w-4" />
+                      {team.players}
+                    </span>
+                  </div>
+                )}
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 bg-transparent"
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive bg-transparent"
+                    onClick={() => handleDeleteClick(team)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Team</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{teamToDelete?.name}"? This
+              action cannot be undone and will remove the team from the
+              tournament.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Team
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
+  );
 }
