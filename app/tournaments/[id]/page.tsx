@@ -42,194 +42,6 @@ import { useToast } from "@/hooks/use-toast";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-// Mock data - will be replaced with API data
-const mockMatches: Match[] = [
-  {
-    _id: "m1",
-    tournamentId: "1",
-    homeTeam: {
-      _id: "t1",
-      name: "Thunder FC",
-      logo: "/placeholder.svg?height=40&width=40",
-      tournamentId: "1",
-    },
-    awayTeam: {
-      _id: "t2",
-      name: "Lightning United",
-      logo: "/placeholder.svg?height=40&width=40",
-      tournamentId: "1",
-    },
-    homeScore: 2,
-    awayScore: 1,
-    status: "Completed",
-    date: "2025-06-15",
-    time: "18:00",
-    venue: "Central Stadium",
-    stage: "Quarter Finals",
-  },
-  {
-    _id: "m2",
-    tournamentId: "1",
-    homeTeam: {
-      _id: "t3",
-      name: "Phoenix Rangers",
-      logo: "/placeholder.svg?height=40&width=40",
-      tournamentId: "1",
-    },
-    awayTeam: {
-      _id: "t4",
-      name: "Storm City",
-      logo: "/placeholder.svg?height=40&width=40",
-      tournamentId: "1",
-    },
-    status: "In Progress",
-    homeScore: 1,
-    awayScore: 1,
-    date: "2025-06-16",
-    time: "20:00",
-    venue: "North Arena",
-    stage: "Quarter Finals",
-  },
-  {
-    _id: "m3",
-    tournamentId: "1",
-    homeTeam: {
-      _id: "t5",
-      name: "Blaze Athletic",
-      logo: "/placeholder.svg?height=40&width=40",
-      tournamentId: "1",
-    },
-    awayTeam: {
-      _id: "t6",
-      name: "Titans FC",
-      logo: "/placeholder.svg?height=40&width=40",
-      tournamentId: "1",
-    },
-    status: "Scheduled",
-    date: "2025-06-17",
-    time: "19:00",
-    venue: "East Stadium",
-    stage: "Quarter Finals",
-  },
-  {
-    _id: "m4",
-    tournamentId: "1",
-    homeTeam: {
-      _id: "t7",
-      name: "Warriors SC",
-      logo: "/placeholder.svg?height=40&width=40",
-      tournamentId: "1",
-    },
-    awayTeam: {
-      _id: "t8",
-      name: "Eagles United",
-      logo: "/placeholder.svg?height=40&width=40",
-      tournamentId: "1",
-    },
-    status: "Scheduled",
-    date: "2025-06-17",
-    time: "21:00",
-    venue: "West Arena",
-    stage: "Quarter Finals",
-  },
-];
-
-const mockStandings: Standing[] = [
-  {
-    position: 1,
-    team: {
-      _id: "t1",
-      name: "Thunder FC",
-      logo: "/placeholder.svg?height=32&width=32",
-      tournamentId: "1",
-    },
-    played: 6,
-    won: 5,
-    drawn: 1,
-    lost: 0,
-    goalsFor: 15,
-    goalsAgainst: 4,
-    goalDifference: 11,
-    points: 16,
-  },
-  {
-    position: 2,
-    team: {
-      _id: "t3",
-      name: "Phoenix Rangers",
-      logo: "/placeholder.svg?height=32&width=32",
-      tournamentId: "1",
-    },
-    played: 6,
-    won: 4,
-    drawn: 2,
-    lost: 0,
-    goalsFor: 12,
-    goalsAgainst: 5,
-    goalDifference: 7,
-    points: 14,
-  },
-  {
-    position: 3,
-    team: {
-      _id: "t5",
-      name: "Blaze Athletic",
-      logo: "/placeholder.svg?height=32&width=32",
-      tournamentId: "1",
-    },
-    played: 6,
-    won: 4,
-    drawn: 1,
-    lost: 1,
-    goalsFor: 13,
-    goalsAgainst: 7,
-    goalDifference: 6,
-    points: 13,
-  },
-  {
-    position: 4,
-    team: {
-      _id: "t7",
-      name: "Warriors SC",
-      logo: "/placeholder.svg?height=32&width=32",
-      tournamentId: "1",
-    },
-    played: 6,
-    won: 3,
-    drawn: 2,
-    lost: 1,
-    goalsFor: 10,
-    goalsAgainst: 6,
-    goalDifference: 4,
-    points: 11,
-  },
-  {
-    position: 5,
-    team: {
-      _id: "t2",
-      name: "Lightning United",
-      logo: "/placeholder.svg?height=32&width=32",
-      tournamentId: "1",
-    },
-    played: 6,
-    won: 2,
-    drawn: 2,
-    lost: 2,
-    goalsFor: 8,
-    goalsAgainst: 8,
-    goalDifference: 0,
-    points: 8,
-  },
-];
-
-const topScorers = [
-  { player: "Marcus Johnson", team: "Thunder FC", goals: 8 },
-  { player: "Alex Rivera", team: "Phoenix Rangers", goals: 7 },
-  { player: "David Chen", team: "Blaze Athletic", goals: 6 },
-  { player: "James Wilson", team: "Warriors SC", goals: 5 },
-  { player: "Carlos Martinez", team: "Lightning United", goals: 5 },
-];
-
 export default function TournamentDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -237,14 +49,37 @@ export default function TournamentDetailPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [tournament, setTournament] = useState<any>(null);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [standings, setStandings] = useState<Standing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMatches, setIsLoadingMatches] = useState(true);
+  const [isLoadingStandings, setIsLoadingStandings] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTournament();
     fetchMatches();
+    fetchStandings();
   }, [params.id]);
+
+  const fetchStandings = async () => {
+    try {
+      setIsLoadingStandings(true);
+
+      const response = await axios.get(
+        `${API_URL}/tournaments/${params.id}/standings`
+      );
+
+      setStandings(response.data.standings || []);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        console.error("Error loading standings:", err.response?.data?.message);
+        // Don't show error toast for standings, just log it
+        setStandings([]);
+      }
+    } finally {
+      setIsLoadingStandings(false);
+    }
+  };
 
   const fetchTournament = async () => {
     try {
@@ -375,7 +210,12 @@ export default function TournamentDetailPage() {
               </Badge>
               <Badge
                 variant="secondary"
-                className={cn("text-white", statusColors[tournament.status])}
+                className={cn(
+                  "text-white",
+                  statusColors[
+                    tournament.status as keyof typeof statusColors
+                  ] || "bg-gray-500"
+                )}
               >
                 {tournament.status}
               </Badge>
@@ -432,7 +272,6 @@ export default function TournamentDetailPage() {
         >
           <TabsList className="glass-strong w-full justify-start overflow-x-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="matches">Matches</TabsTrigger>
             <TabsTrigger value="standings">Standings</TabsTrigger>
             <TabsTrigger value="statistics">Statistics</TabsTrigger>
             <TabsTrigger value="bracket">Bracket</TabsTrigger>
@@ -582,42 +421,6 @@ export default function TournamentDetailPage() {
             </div>
           </TabsContent>
 
-          {/* Matches Tab */}
-          <TabsContent value="matches" className="space-y-4">
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle>Tournament Matches</CardTitle>
-                <CardDescription>
-                  View all scheduled, ongoing, and completed matches
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isLoadingMatches ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-accent" />
-                    <span className="ml-2 text-muted-foreground">
-                      Loading matches...
-                    </span>
-                  </div>
-                ) : matches.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">
-                      No matches yet
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Matches will appear here once they are scheduled
-                    </p>
-                  </div>
-                ) : (
-                  matches.map((match) => (
-                    <MatchCard key={match._id} match={match} />
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Standings Tab */}
           <TabsContent value="standings">
             <Card className="glass">
@@ -628,79 +431,102 @@ export default function TournamentDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">Pos</TableHead>
-                        <TableHead>Team</TableHead>
-                        <TableHead className="text-center">P</TableHead>
-                        <TableHead className="text-center">W</TableHead>
-                        <TableHead className="text-center">D</TableHead>
-                        <TableHead className="text-center">L</TableHead>
-                        <TableHead className="text-center">GF</TableHead>
-                        <TableHead className="text-center">GA</TableHead>
-                        <TableHead className="text-center">GD</TableHead>
-                        <TableHead className="text-center font-semibold">
-                          Pts
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockStandings.map((standing) => (
-                        <TableRow
-                          key={standing.team._id}
-                          className={cn(
-                            standing.position === 1 && "bg-accent/5"
-                          )}
-                        >
-                          <TableCell className="font-medium">
-                            {standing.position === 1 && (
-                              <Trophy className="h-4 w-4 text-accent inline mr-1" />
-                            )}
-                            {standing.position}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={standing.team.logo || "/placeholder.svg"}
-                                alt={standing.team.name}
-                                className="h-6 w-6 rounded-full"
-                              />
-                              <span className="font-medium">
-                                {standing.team.name}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {standing.played}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {standing.won}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {standing.drawn}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {standing.lost}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {standing.goalsFor}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {standing.goalsAgainst}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {standing.goalDifference}
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            {standing.points}
-                          </TableCell>
+                {isLoadingStandings ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                    <span className="ml-2 text-muted-foreground">
+                      Loading standings...
+                    </span>
+                  </div>
+                ) : standings.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">
+                      No standings yet
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Standings will appear once matches are played
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">Pos</TableHead>
+                          <TableHead>Team</TableHead>
+                          <TableHead className="text-center">P</TableHead>
+                          <TableHead className="text-center">W</TableHead>
+                          <TableHead className="text-center">D</TableHead>
+                          <TableHead className="text-center">L</TableHead>
+                          <TableHead className="text-center">GF</TableHead>
+                          <TableHead className="text-center">GA</TableHead>
+                          <TableHead className="text-center">GD</TableHead>
+                          <TableHead className="text-center font-semibold">
+                            Pts
+                          </TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {standings.map((standing) => (
+                          <TableRow
+                            key={standing.team._id}
+                            className={cn(
+                              standing.position === 1 && "bg-accent/5"
+                            )}
+                          >
+                            <TableCell className="font-medium">
+                              {standing.position === 1 && (
+                                <Trophy className="h-4 w-4 text-accent inline mr-1" />
+                              )}
+                              {standing.position}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={
+                                    standing.team.logo
+                                      ? `http://localhost:4000${standing.team.logo}`
+                                      : "/placeholder.svg"
+                                  }
+                                  alt={standing.team.name}
+                                  className="h-6 w-6 rounded-full object-cover"
+                                />
+                                <span className="font-medium">
+                                  {standing.team.name}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {standing.played}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {standing.won}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {standing.drawn}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {standing.lost}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {standing.goalsFor}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {standing.goalsAgainst}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {standing.goalDifference}
+                            </TableCell>
+                            <TableCell className="text-center font-bold">
+                              {standing.points}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -716,34 +542,11 @@ export default function TournamentDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {topScorers.map((scorer, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={cn(
-                              "h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm",
-                              index === 0 && "bg-accent text-accent-foreground",
-                              index !== 0 && "bg-muted"
-                            )}
-                          >
-                            {index + 1}
-                          </div>
-                          <div>
-                            <div className="font-medium">{scorer.player}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {scorer.team}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-2xl font-bold text-accent">
-                          {scorer.goals}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="text-center py-12">
+                    <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      Top scorers data coming soon
+                    </p>
                   </div>
                 </CardContent>
               </Card>
