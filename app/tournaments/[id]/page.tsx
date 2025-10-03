@@ -236,11 +236,14 @@ export default function TournamentDetailPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [tournament, setTournament] = useState<any>(null);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMatches, setIsLoadingMatches] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTournament();
+    fetchMatches();
   }, [params.id]);
 
   const fetchTournament = async () => {
@@ -248,12 +251,7 @@ export default function TournamentDetailPage() {
       setIsLoading(true);
       setError(null);
 
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_URL}/tournaments/${params.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.get(`${API_URL}/tournaments/${params.id}`);
       setTournament(response.data.tournament);
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -268,6 +266,26 @@ export default function TournamentDetailPage() {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchMatches = async () => {
+    try {
+      setIsLoadingMatches(true);
+
+      const response = await axios.get(
+        `${API_URL}/matches/tournament/${params.id}`
+      );
+
+      setMatches(response.data.matches || []);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        console.error("Error loading matches:", err.response?.data?.message);
+        // Don't show error toast for matches, just log it
+        setMatches([]);
+      }
+    } finally {
+      setIsLoadingMatches(false);
     }
   };
 
@@ -574,9 +592,28 @@ export default function TournamentDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {mockMatches.map((match) => (
-                  <MatchCard key={match._id} match={match} />
-                ))}
+                {isLoadingMatches ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                    <span className="ml-2 text-muted-foreground">
+                      Loading matches...
+                    </span>
+                  </div>
+                ) : matches.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">
+                      No matches yet
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Matches will appear here once they are scheduled
+                    </p>
+                  </div>
+                ) : (
+                  matches.map((match) => (
+                    <MatchCard key={match._id} match={match} />
+                  ))
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -801,12 +838,23 @@ export default function TournamentDetailPage() {
 }
 
 function MatchCard({ match }: { match: Match }) {
-  const statusColors = {
-    Scheduled: "bg-blue-500",
-    "In Progress": "bg-green-500 animate-pulse",
-    Completed: "bg-gray-500",
-    Postponed: "bg-yellow-500",
-    Cancelled: "bg-red-500",
+  const statusColors: Record<string, string> = {
+    scheduled: "bg-blue-500",
+    playing: "bg-green-500 animate-pulse",
+    completed: "bg-gray-500",
+    postponed: "bg-yellow-500",
+    cancelled: "bg-red-500",
+  };
+
+  const getStatusColor = (status: string) => {
+    return statusColors[status.toLowerCase()] || "bg-gray-500";
+  };
+
+  const capitalizeStatus = (status: string) => {
+    return status
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
   };
 
   return (
@@ -818,41 +866,37 @@ function MatchCard({ match }: { match: Match }) {
               {match.stage}
             </Badge>
             <Badge
-              className={cn("text-xs text-white", statusColors[match.status])}
+              className={cn("text-xs text-white", getStatusColor(match.status))}
             >
-              {match.status}
+              {capitalizeStatus(match.status)}
             </Badge>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
-                <img
-                  src={match.homeTeam.logo || "/placeholder.svg"}
-                  alt={match.homeTeam.name}
-                  className="h-8 w-8 rounded-full"
-                />
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </div>
                 <span className="font-medium">{match.homeTeam.name}</span>
               </div>
-              {match.homeScore !== undefined && (
+              {match.homeTeamScore !== undefined && (
                 <span className="text-2xl font-bold w-12 text-center">
-                  {match.homeScore}
+                  {match.homeTeamScore}
                 </span>
               )}
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
-                <img
-                  src={match.awayTeam.logo || "/placeholder.svg"}
-                  alt={match.awayTeam.name}
-                  className="h-8 w-8 rounded-full"
-                />
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </div>
                 <span className="font-medium">{match.awayTeam.name}</span>
               </div>
-              {match.awayScore !== undefined && (
+              {match.awayTeamScore !== undefined && (
                 <span className="text-2xl font-bold w-12 text-center">
-                  {match.awayScore}
+                  {match.awayTeamScore}
                 </span>
               )}
             </div>
@@ -860,17 +904,15 @@ function MatchCard({ match }: { match: Match }) {
         </div>
 
         <div className="flex flex-col items-end gap-2 text-sm text-muted-foreground">
+          {match.venue && (
+            <div className="flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              {match.venue}
+            </div>
+          )}
           <div className="flex items-center gap-1">
-            <Calendar className="h-4 w-4" />
-            {format(new Date(match.date), "MMM dd, yyyy")}
-          </div>
-          <div className="flex items-center gap-1">
-            <Clock className="h-4 w-4" />
-            {match.time}
-          </div>
-          <div className="flex items-center gap-1">
-            <MapPin className="h-4 w-4" />
-            {match.venue}
+            <Trophy className="h-4 w-4" />
+            {match.stage}
           </div>
         </div>
       </div>

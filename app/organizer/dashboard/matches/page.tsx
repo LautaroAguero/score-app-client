@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,6 +51,8 @@ import axios from "axios";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function MatchManagementPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [matches, setMatches] = useState<Match[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -61,6 +64,13 @@ export default function MatchManagementPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isScoreDialogOpen, setIsScoreDialogOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+
+  // Tournament context from URL query parameter
+  const tournamentId = searchParams.get("tournament");
+  const [tournamentContext, setTournamentContext] = useState<Tournament | null>(
+    null
+  );
+
   const [newMatch, setNewMatch] = useState({
     tournament: "",
     homeTeam: "",
@@ -73,10 +83,57 @@ export default function MatchManagementPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [tournamentId]);
+
+  useEffect(() => {
+    if (tournamentId && tournamentContext) {
+      setNewMatch((prev) => ({ ...prev, tournament: tournamentId }));
+    }
+  }, [tournamentId, tournamentContext]);
 
   const fetchData = async () => {
-    await Promise.all([fetchTournaments(), fetchTeams(), fetchMatches()]);
+    if (tournamentId) {
+      // Fetch specific tournament and its matches/teams
+      await Promise.all([
+        fetchTournamentContext(),
+        fetchMatchesForTournament(tournamentId),
+        fetchTeamsForTournament(tournamentId),
+      ]);
+    } else {
+      // Fetch all tournaments, teams, and matches
+      await Promise.all([fetchTournaments(), fetchTeams(), fetchMatches()]);
+    }
+  };
+
+  const fetchTournamentContext = async () => {
+    if (!tournamentId) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await axios.get(
+        `${API_URL}/tournaments/${tournamentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data) {
+        setTournamentContext(response.data.tournament);
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error loading tournament",
+          description:
+            error.response?.data?.message || "Failed to load tournament",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const fetchTournaments = async () => {
@@ -135,12 +192,60 @@ export default function MatchManagementPage() {
     }
   };
 
+  const fetchTeamsForTournament = async (id: string) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.get(`${API_URL}/teams?tournament=${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setTeams(response.data.teams || []);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error loading teams",
+          description: error.response?.data?.message || "Failed to load teams",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const fetchMatches = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("token");
 
       const response = await axios.get(`${API_URL}/matches`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setMatches(response.data.matches || []);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error loading matches",
+          description:
+            error.response?.data?.message || "Failed to load matches",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchMatchesForTournament = async (id: string) => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.get(`${API_URL}/matches/tournament/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -182,8 +287,10 @@ export default function MatchManagementPage() {
   );
 
   const handleAddMatch = async () => {
+    const tournamentToUse = tournamentId || newMatch.tournament;
+
     if (
-      !newMatch.tournament ||
+      !tournamentToUse ||
       !newMatch.homeTeam ||
       !newMatch.awayTeam ||
       !newMatch.date ||
@@ -204,7 +311,7 @@ export default function MatchManagementPage() {
       const token = localStorage.getItem("token");
 
       const matchData = {
-        tournament: newMatch.tournament,
+        tournament: tournamentToUse,
         homeTeam: newMatch.homeTeam,
         awayTeam: newMatch.awayTeam,
         date: newMatch.date.toISOString().split("T")[0], // Format as YYYY-MM-DD
@@ -227,7 +334,7 @@ export default function MatchManagementPage() {
       // Close dialog and reset form
       setIsAddDialogOpen(false);
       setNewMatch({
-        tournament: "",
+        tournament: tournamentId || "",
         homeTeam: "",
         awayTeam: "",
         date: undefined,
@@ -237,7 +344,11 @@ export default function MatchManagementPage() {
       });
 
       // Refresh the matches list
-      fetchMatches();
+      if (tournamentId) {
+        fetchMatchesForTournament(tournamentId);
+      } else {
+        fetchMatches();
+      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         toast({
@@ -280,7 +391,11 @@ export default function MatchManagementPage() {
       // Close dialog and refresh list
       setIsScoreDialogOpen(false);
       setSelectedMatch(null);
-      fetchMatches();
+      if (tournamentId) {
+        fetchMatchesForTournament(tournamentId);
+      } else {
+        fetchMatches();
+      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         toast({
@@ -316,7 +431,11 @@ export default function MatchManagementPage() {
       });
 
       // Refresh the matches list
-      fetchMatches();
+      if (tournamentId) {
+        fetchMatchesForTournament(tournamentId);
+      } else {
+        fetchMatches();
+      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         toast({
@@ -351,7 +470,11 @@ export default function MatchManagementPage() {
       });
 
       // Refresh the matches list
-      fetchMatches();
+      if (tournamentId) {
+        fetchMatchesForTournament(tournamentId);
+      } else {
+        fetchMatches();
+      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         toast({
@@ -370,9 +493,15 @@ export default function MatchManagementPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Match Management</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            {tournamentContext
+              ? `Matches - ${tournamentContext.name}`
+              : "Match Management"}
+          </h1>
           <p className="text-muted-foreground">
-            Schedule matches and update scores in real-time
+            {tournamentContext
+              ? "Manage matches for this tournament"
+              : "Schedule matches and update scores in real-time"}
           </p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -390,32 +519,44 @@ export default function MatchManagementPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="tournament">Tournament *</Label>
-                <Select
-                  value={newMatch.tournament}
-                  onValueChange={(value) =>
-                    setNewMatch({ ...newMatch, tournament: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select tournament" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tournaments.length === 0 ? (
-                      <div className="p-2 text-sm text-muted-foreground text-center">
-                        No tournaments available
-                      </div>
-                    ) : (
-                      tournaments.map((tournament) => (
-                        <SelectItem key={tournament._id} value={tournament._id}>
-                          {tournament.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
+              {tournamentContext ? (
+                <div className="space-y-2">
+                  <Label>Tournament</Label>
+                  <div className="p-2 bg-muted rounded-md text-sm">
+                    {tournamentContext.name}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="tournament">Tournament *</Label>
+                  <Select
+                    value={newMatch.tournament}
+                    onValueChange={(value) =>
+                      setNewMatch({ ...newMatch, tournament: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select tournament" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tournaments.length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          No tournaments available
+                        </div>
+                      ) : (
+                        tournaments.map((tournament) => (
+                          <SelectItem
+                            key={tournament._id}
+                            value={tournament._id}
+                          >
+                            {tournament.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -591,22 +732,24 @@ export default function MatchManagementPage() {
                 className="pl-10"
               />
             </div>
-            <Select
-              value={selectedTournament}
-              onValueChange={setSelectedTournament}
-            >
-              <SelectTrigger className="w-full md:w-[250px]">
-                <SelectValue placeholder="Filter by tournament" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Tournaments</SelectItem>
-                {tournaments.map((tournament) => (
-                  <SelectItem key={tournament._id} value={tournament._id}>
-                    {tournament.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!tournamentContext && (
+              <Select
+                value={selectedTournament}
+                onValueChange={setSelectedTournament}
+              >
+                <SelectTrigger className="w-full md:w-[250px]">
+                  <SelectValue placeholder="Filter by tournament" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tournaments</SelectItem>
+                  {tournaments.map((tournament) => (
+                    <SelectItem key={tournament._id} value={tournament._id}>
+                      {tournament.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </CardContent>
       </Card>
