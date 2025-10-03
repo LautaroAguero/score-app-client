@@ -51,6 +51,8 @@ export default function OrganizerLoginPage() {
         // Guardar el token si viene en la respuesta
         if (response.data.token) {
           localStorage.setItem("token", response.data.token);
+          // Dispatch custom event to notify navigation component
+          window.dispatchEvent(new Event("authChange"));
         }
 
         router.push("/organizer/dashboard");
