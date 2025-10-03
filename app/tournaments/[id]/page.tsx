@@ -45,16 +45,16 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 // Mock data - will be replaced with API data
 const mockMatches: Match[] = [
   {
-    id: "m1",
+    _id: "m1",
     tournamentId: "1",
     homeTeam: {
-      id: "t1",
+      _id: "t1",
       name: "Thunder FC",
       logo: "/placeholder.svg?height=40&width=40",
       tournamentId: "1",
     },
     awayTeam: {
-      id: "t2",
+      _id: "t2",
       name: "Lightning United",
       logo: "/placeholder.svg?height=40&width=40",
       tournamentId: "1",
@@ -68,16 +68,16 @@ const mockMatches: Match[] = [
     stage: "Quarter Finals",
   },
   {
-    id: "m2",
+    _id: "m2",
     tournamentId: "1",
     homeTeam: {
-      id: "t3",
+      _id: "t3",
       name: "Phoenix Rangers",
       logo: "/placeholder.svg?height=40&width=40",
       tournamentId: "1",
     },
     awayTeam: {
-      id: "t4",
+      _id: "t4",
       name: "Storm City",
       logo: "/placeholder.svg?height=40&width=40",
       tournamentId: "1",
@@ -91,16 +91,16 @@ const mockMatches: Match[] = [
     stage: "Quarter Finals",
   },
   {
-    id: "m3",
+    _id: "m3",
     tournamentId: "1",
     homeTeam: {
-      id: "t5",
+      _id: "t5",
       name: "Blaze Athletic",
       logo: "/placeholder.svg?height=40&width=40",
       tournamentId: "1",
     },
     awayTeam: {
-      id: "t6",
+      _id: "t6",
       name: "Titans FC",
       logo: "/placeholder.svg?height=40&width=40",
       tournamentId: "1",
@@ -112,16 +112,16 @@ const mockMatches: Match[] = [
     stage: "Quarter Finals",
   },
   {
-    id: "m4",
+    _id: "m4",
     tournamentId: "1",
     homeTeam: {
-      id: "t7",
+      _id: "t7",
       name: "Warriors SC",
       logo: "/placeholder.svg?height=40&width=40",
       tournamentId: "1",
     },
     awayTeam: {
-      id: "t8",
+      _id: "t8",
       name: "Eagles United",
       logo: "/placeholder.svg?height=40&width=40",
       tournamentId: "1",
@@ -138,7 +138,7 @@ const mockStandings: Standing[] = [
   {
     position: 1,
     team: {
-      id: "t1",
+      _id: "t1",
       name: "Thunder FC",
       logo: "/placeholder.svg?height=32&width=32",
       tournamentId: "1",
@@ -155,7 +155,7 @@ const mockStandings: Standing[] = [
   {
     position: 2,
     team: {
-      id: "t3",
+      _id: "t3",
       name: "Phoenix Rangers",
       logo: "/placeholder.svg?height=32&width=32",
       tournamentId: "1",
@@ -172,7 +172,7 @@ const mockStandings: Standing[] = [
   {
     position: 3,
     team: {
-      id: "t5",
+      _id: "t5",
       name: "Blaze Athletic",
       logo: "/placeholder.svg?height=32&width=32",
       tournamentId: "1",
@@ -189,7 +189,7 @@ const mockStandings: Standing[] = [
   {
     position: 4,
     team: {
-      id: "t7",
+      _id: "t7",
       name: "Warriors SC",
       logo: "/placeholder.svg?height=32&width=32",
       tournamentId: "1",
@@ -206,7 +206,7 @@ const mockStandings: Standing[] = [
   {
     position: 5,
     team: {
-      id: "t2",
+      _id: "t2",
       name: "Lightning United",
       logo: "/placeholder.svg?height=32&width=32",
       tournamentId: "1",
@@ -575,7 +575,7 @@ export default function TournamentDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {mockMatches.map((match) => (
-                  <MatchCard key={match.id} match={match} />
+                  <MatchCard key={match._id} match={match} />
                 ))}
               </CardContent>
             </Card>
@@ -612,7 +612,7 @@ export default function TournamentDetailPage() {
                     <TableBody>
                       {mockStandings.map((standing) => (
                         <TableRow
-                          key={standing.team.id}
+                          key={standing.team._id}
                           className={cn(
                             standing.position === 1 && "bg-accent/5"
                           )}

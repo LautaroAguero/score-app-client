@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -14,65 +14,53 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Edit, CalendarIcon, Clock, MapPin, Play, CheckCircle2 } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
-import type { Match } from "@/lib/types"
-import { useToast } from "@/hooks/use-toast"
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  Plus,
+  Search,
+  Edit,
+  CalendarIcon,
+  Clock,
+  MapPin,
+  Play,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import type { Match, Tournament, Team } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
 
-const mockMatches: Match[] = [
-  {
-    id: "m1",
-    tournamentId: "1",
-    homeTeam: { id: "t1", name: "Thunder FC", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
-    awayTeam: { id: "t2", name: "Lightning United", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
-    homeScore: 2,
-    awayScore: 1,
-    status: "Completed",
-    date: "2025-06-15",
-    time: "18:00",
-    venue: "Central Stadium",
-    stage: "Quarter Finals",
-  },
-  {
-    id: "m2",
-    tournamentId: "1",
-    homeTeam: { id: "t3", name: "Phoenix Rangers", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
-    awayTeam: { id: "t4", name: "Storm City", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
-    status: "In Progress",
-    homeScore: 1,
-    awayScore: 1,
-    date: "2025-06-16",
-    time: "20:00",
-    venue: "North Arena",
-    stage: "Quarter Finals",
-  },
-  {
-    id: "m3",
-    tournamentId: "1",
-    homeTeam: { id: "t5", name: "Blaze Athletic", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
-    awayTeam: { id: "t6", name: "Titans FC", logo: "/placeholder.svg?height=40&width=40", tournamentId: "1" },
-    status: "Scheduled",
-    date: "2025-06-17",
-    time: "19:00",
-    venue: "East Stadium",
-    stage: "Quarter Finals",
-  },
-]
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function MatchManagementPage() {
-  const { toast } = useToast()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedTournament, setSelectedTournament] = useState("all")
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isScoreDialogOpen, setIsScoreDialogOpen] = useState(false)
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
+  const { toast } = useToast();
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTournament, setSelectedTournament] = useState("all");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isScoreDialogOpen, setIsScoreDialogOpen] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [newMatch, setNewMatch] = useState({
     tournament: "",
     homeTeam: "",
@@ -81,62 +69,301 @@ export default function MatchManagementPage() {
     time: "",
     venue: "",
     stage: "",
-  })
+  });
 
-  const filteredMatches = mockMatches.filter((match) => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    await Promise.all([fetchTournaments(), fetchTeams(), fetchMatches()]);
+  };
+
+  const fetchTournaments = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to view tournaments",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await axios.get(
+        `${API_URL}/tournaments/my-tournaments`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setTournaments(response.data.tournaments || []);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error loading tournaments",
+          description:
+            error.response?.data?.message || "Failed to load tournaments",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const fetchTeams = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.get(`${API_URL}/teams`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setTeams(response.data.teams || []);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error loading teams",
+          description: error.response?.data?.message || "Failed to load teams",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const fetchMatches = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.get(`${API_URL}/matches`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setMatches(response.data.matches || []);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error loading matches",
+          description:
+            error.response?.data?.message || "Failed to load matches",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredMatches = matches.filter((match) => {
     const matchesSearch =
       match.homeTeam.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      match.awayTeam.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTournament = selectedTournament === "all" || match.tournamentId === selectedTournament
-    return matchesSearch && matchesTournament
-  })
+      match.awayTeam.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTournament =
+      selectedTournament === "all" ||
+      match.tournament._id === selectedTournament;
+    return matchesSearch && matchesTournament;
+  });
 
-  const scheduledMatches = filteredMatches.filter((m) => m.status === "Scheduled")
-  const liveMatches = filteredMatches.filter((m) => m.status === "In Progress")
-  const completedMatches = filteredMatches.filter((m) => m.status === "Completed")
+  const scheduledMatches = filteredMatches.filter(
+    (m) => m.status.toLowerCase() === "scheduled"
+  );
+  const liveMatches = filteredMatches.filter(
+    (m) => m.status.toLowerCase() === "playing"
+  );
+  const completedMatches = filteredMatches.filter(
+    (m) => m.status.toLowerCase() === "completed"
+  );
 
-  const handleAddMatch = () => {
-    console.log("Adding match:", newMatch)
-    toast({
-      title: "Match Created",
-      description: "The match has been successfully scheduled.",
-    })
-    setIsAddDialogOpen(false)
-    setNewMatch({
-      tournament: "",
-      homeTeam: "",
-      awayTeam: "",
-      date: undefined,
-      time: "",
-      venue: "",
-      stage: "",
-    })
-  }
+  const handleAddMatch = async () => {
+    if (
+      !newMatch.tournament ||
+      !newMatch.homeTeam ||
+      !newMatch.awayTeam ||
+      !newMatch.date ||
+      !newMatch.time ||
+      !newMatch.venue ||
+      !newMatch.stage
+    ) {
+      toast({
+        title: "Missing required fields",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const handleUpdateScore = (homeScore: number, awayScore: number) => {
-    console.log("Updating score:", { matchId: selectedMatch?.id, homeScore, awayScore })
-    toast({
-      title: "Score Updated",
-      description: "Match score has been updated successfully.",
-    })
-    setIsScoreDialogOpen(false)
-  }
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem("token");
 
-  const handleStartMatch = (match: Match) => {
-    console.log("Starting match:", match.id)
-    toast({
-      title: "Match Started",
-      description: `${match.homeTeam.name} vs ${match.awayTeam.name} is now live!`,
-    })
-  }
+      const matchData = {
+        tournament: newMatch.tournament,
+        homeTeam: newMatch.homeTeam,
+        awayTeam: newMatch.awayTeam,
+        date: newMatch.date.toISOString().split("T")[0], // Format as YYYY-MM-DD
+        time: newMatch.time,
+        venue: newMatch.venue,
+        stage: newMatch.stage,
+      };
 
-  const handleEndMatch = (match: Match) => {
-    console.log("Ending match:", match.id)
-    toast({
-      title: "Match Completed",
-      description: "The match has been marked as completed.",
-    })
-  }
+      const response = await axios.post(`${API_URL}/matches`, matchData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      toast({
+        title: "Match scheduled",
+        description: "The match has been successfully scheduled.",
+      });
+
+      // Close dialog and reset form
+      setIsAddDialogOpen(false);
+      setNewMatch({
+        tournament: "",
+        homeTeam: "",
+        awayTeam: "",
+        date: undefined,
+        time: "",
+        venue: "",
+        stage: "",
+      });
+
+      // Refresh the matches list
+      fetchMatches();
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error scheduling match",
+          description:
+            error.response?.data?.message || "Failed to schedule match",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateScore = async (homeScore: number, awayScore: number) => {
+    if (!selectedMatch) return;
+
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.put(
+        `${API_URL}/matches/${selectedMatch._id}`,
+        {
+          homeTeamScore: homeScore,
+          awayTeamScore: awayScore,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast({
+        title: "Score updated",
+        description: "Match score has been updated successfully.",
+      });
+
+      // Close dialog and refresh list
+      setIsScoreDialogOpen(false);
+      setSelectedMatch(null);
+      fetchMatches();
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error updating score",
+          description:
+            error.response?.data?.message || "Failed to update score",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStartMatch = async (match: Match) => {
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.put(
+        `${API_URL}/matches/${match._id}`,
+        { status: "playing" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast({
+        title: "Match started",
+        description: `${match.homeTeam.name} vs ${match.awayTeam.name} is now live!`,
+      });
+
+      // Refresh the matches list
+      fetchMatches();
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error starting match",
+          description: error.response?.data?.message || "Failed to start match",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEndMatch = async (match: Match) => {
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.put(
+        `${API_URL}/matches/${match._id}`,
+        { status: "completed" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast({
+        title: "Match completed",
+        description: "The match has been marked as completed.",
+      });
+
+      // Refresh the matches list
+      fetchMatches();
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error ending match",
+          description: error.response?.data?.message || "Failed to end match",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -144,7 +371,9 @@ export default function MatchManagementPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-2">Match Management</h1>
-          <p className="text-muted-foreground">Schedule matches and update scores in real-time</p>
+          <p className="text-muted-foreground">
+            Schedule matches and update scores in real-time
+          </p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -156,21 +385,34 @@ export default function MatchManagementPage() {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Schedule New Match</DialogTitle>
-              <DialogDescription>Enter the match details to add it to the tournament schedule</DialogDescription>
+              <DialogDescription>
+                Enter the match details to add it to the tournament schedule
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="tournament">Tournament *</Label>
                 <Select
                   value={newMatch.tournament}
-                  onValueChange={(value) => setNewMatch({ ...newMatch, tournament: value })}
+                  onValueChange={(value) =>
+                    setNewMatch({ ...newMatch, tournament: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select tournament" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Summer Soccer Championship</SelectItem>
-                    <SelectItem value="2">City Basketball League</SelectItem>
+                    {tournaments.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        No tournaments available
+                      </div>
+                    ) : (
+                      tournaments.map((tournament) => (
+                        <SelectItem key={tournament._id} value={tournament._id}>
+                          {tournament.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -180,15 +422,32 @@ export default function MatchManagementPage() {
                   <Label htmlFor="homeTeam">Home Team *</Label>
                   <Select
                     value={newMatch.homeTeam}
-                    onValueChange={(value) => setNewMatch({ ...newMatch, homeTeam: value })}
+                    onValueChange={(value) =>
+                      setNewMatch({ ...newMatch, homeTeam: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select team" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="t1">Thunder FC</SelectItem>
-                      <SelectItem value="t2">Lightning United</SelectItem>
-                      <SelectItem value="t3">Phoenix Rangers</SelectItem>
+                      {teams.filter(
+                        (team) => team.tournament._id === newMatch.tournament
+                      ).length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          Select tournament first
+                        </div>
+                      ) : (
+                        teams
+                          .filter(
+                            (team) =>
+                              team.tournament._id === newMatch.tournament
+                          )
+                          .map((team) => (
+                            <SelectItem key={team._id} value={team._id}>
+                              {team.name}
+                            </SelectItem>
+                          ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -197,15 +456,33 @@ export default function MatchManagementPage() {
                   <Label htmlFor="awayTeam">Away Team *</Label>
                   <Select
                     value={newMatch.awayTeam}
-                    onValueChange={(value) => setNewMatch({ ...newMatch, awayTeam: value })}
+                    onValueChange={(value) =>
+                      setNewMatch({ ...newMatch, awayTeam: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select team" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="t1">Thunder FC</SelectItem>
-                      <SelectItem value="t2">Lightning United</SelectItem>
-                      <SelectItem value="t3">Phoenix Rangers</SelectItem>
+                      {teams.filter(
+                        (team) => team.tournament._id === newMatch.tournament
+                      ).length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          Select tournament first
+                        </div>
+                      ) : (
+                        teams
+                          .filter(
+                            (team) =>
+                              team.tournament._id === newMatch.tournament &&
+                              team._id !== newMatch.homeTeam
+                          )
+                          .map((team) => (
+                            <SelectItem key={team._id} value={team._id}>
+                              {team.name}
+                            </SelectItem>
+                          ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -216,9 +493,14 @@ export default function MatchManagementPage() {
                   <Label>Match Date *</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal bg-transparent">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal bg-transparent"
+                      >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {newMatch.date ? format(newMatch.date, "PPP") : "Pick a date"}
+                        {newMatch.date
+                          ? format(newMatch.date, "PPP")
+                          : "Pick a date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -237,7 +519,9 @@ export default function MatchManagementPage() {
                     id="time"
                     type="time"
                     value={newMatch.time}
-                    onChange={(e) => setNewMatch({ ...newMatch, time: e.target.value })}
+                    onChange={(e) =>
+                      setNewMatch({ ...newMatch, time: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -248,7 +532,9 @@ export default function MatchManagementPage() {
                   id="venue"
                   placeholder="e.g., Central Stadium"
                   value={newMatch.venue}
-                  onChange={(e) => setNewMatch({ ...newMatch, venue: e.target.value })}
+                  onChange={(e) =>
+                    setNewMatch({ ...newMatch, venue: e.target.value })
+                  }
                 />
               </div>
 
@@ -258,12 +544,17 @@ export default function MatchManagementPage() {
                   id="stage"
                   placeholder="e.g., Quarter Finals"
                   value={newMatch.stage}
-                  onChange={(e) => setNewMatch({ ...newMatch, stage: e.target.value })}
+                  onChange={(e) =>
+                    setNewMatch({ ...newMatch, stage: e.target.value })
+                  }
                 />
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsAddDialogOpen(false)}
+              >
                 Cancel
               </Button>
               <Button
@@ -275,7 +566,8 @@ export default function MatchManagementPage() {
                   !newMatch.date ||
                   !newMatch.time ||
                   !newMatch.venue ||
-                  !newMatch.stage
+                  !newMatch.stage ||
+                  isSubmitting
                 }
               >
                 Schedule Match
@@ -299,14 +591,20 @@ export default function MatchManagementPage() {
                 className="pl-10"
               />
             </div>
-            <Select value={selectedTournament} onValueChange={setSelectedTournament}>
+            <Select
+              value={selectedTournament}
+              onValueChange={setSelectedTournament}
+            >
               <SelectTrigger className="w-full md:w-[250px]">
                 <SelectValue placeholder="Filter by tournament" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Tournaments</SelectItem>
-                <SelectItem value="1">Summer Soccer Championship</SelectItem>
-                <SelectItem value="2">City Basketball League</SelectItem>
+                {tournaments.map((tournament) => (
+                  <SelectItem key={tournament._id} value={tournament._id}>
+                    {tournament.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -320,28 +618,42 @@ export default function MatchManagementPage() {
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             Live ({liveMatches.length})
           </TabsTrigger>
-          <TabsTrigger value="scheduled">Scheduled ({scheduledMatches.length})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({completedMatches.length})</TabsTrigger>
+          <TabsTrigger value="scheduled">
+            Scheduled ({scheduledMatches.length})
+          </TabsTrigger>
+          <TabsTrigger value="completed">
+            Completed ({completedMatches.length})
+          </TabsTrigger>
         </TabsList>
 
         {/* Live Matches */}
         <TabsContent value="live" className="space-y-4">
-          {liveMatches.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              <span className="ml-2 text-muted-foreground">
+                Loading matches...
+              </span>
+            </div>
+          ) : liveMatches.length === 0 ? (
             <Card className="glass p-12 text-center">
               <Play className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No live matches</h3>
-              <p className="text-muted-foreground">Start a scheduled match to see it here</p>
+              <p className="text-muted-foreground">
+                Start a scheduled match to see it here
+              </p>
             </Card>
           ) : (
             liveMatches.map((match) => (
               <MatchCard
-                key={match.id}
+                key={match._id}
                 match={match}
                 onUpdateScore={() => {
-                  setSelectedMatch(match)
-                  setIsScoreDialogOpen(true)
+                  setSelectedMatch(match);
+                  setIsScoreDialogOpen(true);
                 }}
                 onEndMatch={() => handleEndMatch(match)}
+                isSubmitting={isSubmitting}
               />
             ))
           )}
@@ -349,29 +661,58 @@ export default function MatchManagementPage() {
 
         {/* Scheduled Matches */}
         <TabsContent value="scheduled" className="space-y-4">
-          {scheduledMatches.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              <span className="ml-2 text-muted-foreground">
+                Loading matches...
+              </span>
+            </div>
+          ) : scheduledMatches.length === 0 ? (
             <Card className="glass p-12 text-center">
               <CalendarIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No scheduled matches</h3>
-              <p className="text-muted-foreground">Schedule matches to see them here</p>
+              <h3 className="text-xl font-semibold mb-2">
+                No scheduled matches
+              </h3>
+              <p className="text-muted-foreground">
+                Schedule matches to see them here
+              </p>
             </Card>
           ) : (
             scheduledMatches.map((match) => (
-              <MatchCard key={match.id} match={match} onStartMatch={() => handleStartMatch(match)} />
+              <MatchCard
+                key={match._id}
+                match={match}
+                onStartMatch={() => handleStartMatch(match)}
+                isSubmitting={isSubmitting}
+              />
             ))
           )}
         </TabsContent>
 
         {/* Completed Matches */}
         <TabsContent value="completed" className="space-y-4">
-          {completedMatches.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              <span className="ml-2 text-muted-foreground">
+                Loading matches...
+              </span>
+            </div>
+          ) : completedMatches.length === 0 ? (
             <Card className="glass p-12 text-center">
               <CheckCircle2 className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No completed matches</h3>
-              <p className="text-muted-foreground">Completed matches will appear here</p>
+              <h3 className="text-xl font-semibold mb-2">
+                No completed matches
+              </h3>
+              <p className="text-muted-foreground">
+                Completed matches will appear here
+              </p>
             </Card>
           ) : (
-            completedMatches.map((match) => <MatchCard key={match.id} match={match} />)
+            completedMatches.map((match) => (
+              <MatchCard key={match._id} match={match} />
+            ))
           )}
         </TabsContent>
       </Tabs>
@@ -381,19 +722,22 @@ export default function MatchManagementPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Update Match Score</DialogTitle>
-            <DialogDescription>Enter the current score for this match</DialogDescription>
+            <DialogDescription>
+              Enter the current score for this match
+            </DialogDescription>
           </DialogHeader>
           {selectedMatch && (
             <ScoreUpdateForm
               match={selectedMatch}
               onUpdate={handleUpdateScore}
               onCancel={() => setIsScoreDialogOpen(false)}
+              isSubmitting={isSubmitting}
             />
           )}
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
 
 function MatchCard({
@@ -401,19 +745,32 @@ function MatchCard({
   onStartMatch,
   onUpdateScore,
   onEndMatch,
+  isSubmitting = false,
 }: {
-  match: Match
-  onStartMatch?: () => void
-  onUpdateScore?: () => void
-  onEndMatch?: () => void
+  match: Match;
+  onStartMatch?: () => void;
+  onUpdateScore?: () => void;
+  onEndMatch?: () => void;
+  isSubmitting?: boolean;
 }) {
-  const statusColors = {
-    Scheduled: "bg-blue-500",
-    "In Progress": "bg-green-500 animate-pulse",
-    Completed: "bg-gray-500",
-    Postponed: "bg-yellow-500",
-    Cancelled: "bg-red-500",
-  }
+  const statusColors: Record<string, string> = {
+    scheduled: "bg-blue-500",
+    playing: "bg-green-500 animate-pulse",
+    completed: "bg-gray-500",
+    postponed: "bg-yellow-500",
+    cancelled: "bg-red-500",
+  };
+
+  const getStatusColor = (status: string) => {
+    return statusColors[status.toLowerCase()] || "bg-gray-500";
+  };
+
+  const capitalizeStatus = (status: string) => {
+    return status
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
 
   return (
     <Card className="glass-strong hover:shadow-lg transition-shadow">
@@ -425,50 +782,81 @@ function MatchCard({
               <Badge variant="outline" className="text-xs">
                 {match.stage}
               </Badge>
-              <Badge className={cn("text-xs text-white", statusColors[match.status])}>{match.status}</Badge>
+              <Badge
+                className={cn(
+                  "text-xs text-white",
+                  getStatusColor(match.status)
+                )}
+              >
+                {capitalizeStatus(match.status)}
+              </Badge>
             </div>
 
             {/* Teams */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
-                  <img
-                    src={match.homeTeam.logo || "/placeholder.svg"}
-                    alt={match.homeTeam.name}
-                    className="h-10 w-10 rounded-full"
-                  />
-                  <span className="font-semibold text-lg">{match.homeTeam.name}</span>
+                  <div className="relative h-10 w-10 rounded-full overflow-hidden">
+                    <img
+                      src={
+                        match.homeTeam.logo
+                          ? `http://localhost:4000${match.homeTeam.logo}`
+                          : "/placeholder.svg"
+                      }
+                      alt={match.homeTeam.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <span className="font-semibold text-lg">
+                    {match.homeTeam.name}
+                  </span>
                 </div>
-                {match.homeScore !== undefined && (
-                  <span className="text-3xl font-bold w-16 text-center">{match.homeScore}</span>
+                {match.homeTeamScore !== undefined && (
+                  <span className="text-3xl font-bold w-16 text-center">
+                    {match.homeTeamScore}
+                  </span>
                 )}
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
-                  <img
-                    src={match.awayTeam.logo || "/placeholder.svg"}
-                    alt={match.awayTeam.name}
-                    className="h-10 w-10 rounded-full"
-                  />
-                  <span className="font-semibold text-lg">{match.awayTeam.name}</span>
+                  <div className="relative h-10 w-10 rounded-full overflow-hidden">
+                    <img
+                      src={
+                        match.awayTeam.logo
+                          ? `http://localhost:4000${match.awayTeam.logo}`
+                          : "/placeholder.svg"
+                      }
+                      alt={match.awayTeam.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <span className="font-semibold text-lg">
+                    {match.awayTeam.name}
+                  </span>
                 </div>
-                {match.awayScore !== undefined && (
-                  <span className="text-3xl font-bold w-16 text-center">{match.awayScore}</span>
+                {match.awayTeamScore !== undefined && (
+                  <span className="text-3xl font-bold w-16 text-center">
+                    {match.awayTeamScore}
+                  </span>
                 )}
               </div>
             </div>
 
             {/* Match Details */}
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <CalendarIcon className="h-4 w-4" />
-                {format(new Date(match.date), "MMM dd, yyyy")}
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                {match.time}
-              </div>
+              {match.date && (
+                <div className="flex items-center gap-1">
+                  <CalendarIcon className="h-4 w-4" />
+                  {format(new Date(match.date), "MMM dd, yyyy")}
+                </div>
+              )}
+              {match.time && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  {match.time}
+                </div>
+              )}
               <div className="flex items-center gap-1">
                 <MapPin className="h-4 w-4" />
                 {match.venue}
@@ -478,30 +866,65 @@ function MatchCard({
 
           {/* Actions */}
           <div className="flex flex-col gap-2 min-w-[140px]">
-            {match.status === "Scheduled" && onStartMatch && (
-              <Button onClick={onStartMatch} className="w-full">
-                <Play className="mr-2 h-4 w-4" />
-                Start Match
+            {match.status.toLowerCase() === "scheduled" && onStartMatch && (
+              <Button
+                onClick={onStartMatch}
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" />
+                    Start Match
+                  </>
+                )}
               </Button>
             )}
-            {match.status === "In Progress" && (
+            {match.status.toLowerCase() === "playing" && (
               <>
                 {onUpdateScore && (
-                  <Button onClick={onUpdateScore} className="w-full">
+                  <Button
+                    onClick={onUpdateScore}
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
                     <Edit className="mr-2 h-4 w-4" />
                     Update Score
                   </Button>
                 )}
                 {onEndMatch && (
-                  <Button onClick={onEndMatch} variant="outline" className="w-full bg-transparent">
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    End Match
+                  <Button
+                    onClick={onEndMatch}
+                    variant="outline"
+                    className="w-full bg-transparent"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Ending...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        End Match
+                      </>
+                    )}
                   </Button>
                 )}
               </>
             )}
-            {match.status === "Completed" && (
-              <Button variant="outline" className="w-full bg-transparent" disabled>
+            {match.status.toLowerCase() === "completed" && (
+              <Button
+                variant="outline"
+                className="w-full bg-transparent"
+                disabled
+              >
                 <CheckCircle2 className="mr-2 h-4 w-4" />
                 Completed
               </Button>
@@ -510,32 +933,42 @@ function MatchCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function ScoreUpdateForm({
   match,
   onUpdate,
   onCancel,
+  isSubmitting = false,
 }: {
-  match: Match
-  onUpdate: (homeScore: number, awayScore: number) => void
-  onCancel: () => void
+  match: Match;
+  onUpdate: (homeScore: number, awayScore: number) => void;
+  onCancel: () => void;
+  isSubmitting?: boolean;
 }) {
-  const [homeScore, setHomeScore] = useState(match.homeScore?.toString() || "0")
-  const [awayScore, setAwayScore] = useState(match.awayScore?.toString() || "0")
+  const [homeScore, setHomeScore] = useState(
+    match.homeTeamScore?.toString() || "0"
+  );
+  const [awayScore, setAwayScore] = useState(
+    match.awayTeamScore?.toString() || "0"
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onUpdate(Number.parseInt(homeScore), Number.parseInt(awayScore))
-  }
+    e.preventDefault();
+    onUpdate(Number.parseInt(homeScore), Number.parseInt(awayScore));
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 py-4">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={match.homeTeam.logo || "/placeholder.svg"} alt={match.homeTeam.name} className="h-8 w-8" />
+            <img
+              src={match.homeTeam.logo || "/placeholder.svg"}
+              alt={match.homeTeam.name}
+              className="h-8 w-8"
+            />
             <span className="font-medium">{match.homeTeam.name}</span>
           </div>
           <Input
@@ -549,7 +982,11 @@ function ScoreUpdateForm({
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={match.awayTeam.logo || "/placeholder.svg"} alt={match.awayTeam.name} className="h-8 w-8" />
+            <img
+              src={match.awayTeam.logo || "/placeholder.svg"}
+              alt={match.awayTeam.name}
+              className="h-8 w-8"
+            />
             <span className="font-medium">{match.awayTeam.name}</span>
           </div>
           <Input
@@ -563,11 +1000,25 @@ function ScoreUpdateForm({
       </div>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
           Cancel
         </Button>
-        <Button type="submit">Update Score</Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Updating...
+            </>
+          ) : (
+            "Update Score"
+          )}
+        </Button>
       </div>
     </form>
-  )
+  );
 }

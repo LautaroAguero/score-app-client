@@ -77,8 +77,10 @@ export default function TeamManagementPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTournament, setSelectedTournament] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+  const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [newTeam, setNewTeam] = useState({
@@ -86,8 +88,15 @@ export default function TeamManagementPage() {
     tournamentId: "",
     group: "",
   });
+  const [editTeam, setEditTeam] = useState({
+    name: "",
+    tournamentId: "",
+    group: "",
+  });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
+  const [editLogoPreview, setEditLogoPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
@@ -292,7 +301,7 @@ export default function TeamManagementPage() {
       setIsDeleting(true);
       const token = localStorage.getItem("token");
 
-      await axios.delete(`${API_URL}/teams/${teamToDelete.id}`, {
+      await axios.delete(`${API_URL}/teams/${teamToDelete._id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -323,6 +332,145 @@ export default function TeamManagementPage() {
   const handleDeleteCancel = () => {
     setIsDeleteDialogOpen(false);
     setTeamToDelete(null);
+  };
+
+  const handleEditClick = (team: Team) => {
+    setTeamToEdit(team);
+    setEditTeam({
+      name: team.name,
+      tournamentId: team.tournament._id,
+      group: team.group || "",
+    });
+    setEditLogoFile(null);
+    setEditLogoPreview(
+      team.teamLogo ? `http://localhost:4000${team.teamLogo}` : null
+    );
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditTeam = async () => {
+    if (!editTeam.name || !editTeam.tournamentId || !teamToEdit) {
+      toast({
+        title: "Missing required fields",
+        description: "Please fill in team name and select a tournament",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem("token");
+
+      const formData = new FormData();
+      formData.append("name", editTeam.name);
+      formData.append("tournamentId", editTeam.tournamentId);
+      if (editTeam.group) {
+        formData.append("group", editTeam.group);
+      }
+      if (editLogoFile) {
+        formData.append("teamLogo", editLogoFile);
+      }
+
+      const response = await axios.put(
+        `${API_URL}/teams/${teamToEdit._id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast({
+        title: "Team updated",
+        description: `${editTeam.name} has been successfully updated.`,
+      });
+
+      // Update team in the list
+      setTeams(
+        teams.map((t) => (t._id === teamToEdit._id ? response.data.team : t))
+      );
+
+      // Reset form and close dialog
+      setIsEditDialogOpen(false);
+      setTeamToEdit(null);
+      setEditTeam({ name: "", tournamentId: "", group: "" });
+      setEditLogoFile(null);
+      setEditLogoPreview(null);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error updating team",
+          description: error.response?.data?.message || "Failed to update team",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditFileSelect = (file: File) => {
+    if (file && file.type.startsWith("image/")) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setEditLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file (PNG, JPG, etc.)",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleEditDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleEditDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleEditFileSelect(file);
+    }
+  };
+
+  const handleEditFileInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleEditFileSelect(file);
+    }
+  };
+
+  const removeEditLogo = () => {
+    setEditLogoFile(null);
+    setEditLogoPreview(
+      teamToEdit?.teamLogo
+        ? `http://localhost:4000${teamToEdit.teamLogo}`
+        : null
+    );
   };
 
   return (
@@ -478,6 +626,143 @@ export default function TeamManagementPage() {
         </Dialog>
       </div>
 
+      {/* Edit Team Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Team</DialogTitle>
+            <DialogDescription>
+              Update the team details and logo
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editTeamName">Team Name *</Label>
+              <Input
+                id="editTeamName"
+                placeholder="e.g., Thunder FC"
+                value={editTeam.name}
+                onChange={(e) =>
+                  setEditTeam({ ...editTeam, name: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editTournament">Tournament *</Label>
+              <Select
+                value={editTeam.tournamentId}
+                onValueChange={(value) =>
+                  setEditTeam({ ...editTeam, tournamentId: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select tournament" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tournaments.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      No tournaments available
+                    </div>
+                  ) : (
+                    tournaments.map((tournament) => (
+                      <SelectItem key={tournament._id} value={tournament._id}>
+                        {tournament.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editGroup">Group (Optional)</Label>
+              <Input
+                id="editGroup"
+                placeholder="e.g., Group A"
+                value={editTeam.group}
+                onChange={(e) =>
+                  setEditTeam({ ...editTeam, group: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Team Logo (Optional)</Label>
+              {editLogoPreview ? (
+                <div className="relative">
+                  <img
+                    src={editLogoPreview}
+                    alt="Logo preview"
+                    className="w-24 h-24 object-cover rounded-lg mx-auto"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-0 right-0"
+                    onClick={removeEditLogo}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  className={cn(
+                    "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+                    isDragging
+                      ? "border-accent bg-accent/10"
+                      : "border-border hover:border-accent"
+                  )}
+                  onDragOver={handleEditDragOver}
+                  onDragLeave={handleEditDragLeave}
+                  onDrop={handleEditDrop}
+                  onClick={() =>
+                    document.getElementById("edit-logo-upload")?.click()
+                  }
+                >
+                  <Upload className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">
+                    Drag and drop or click to upload
+                  </p>
+                  <input
+                    id="edit-logo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditFileInputChange}
+                    className="hidden"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditTeam}
+              disabled={
+                !editTeam.name || !editTeam.tournamentId || isSubmitting
+              }
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update Team"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Filters */}
       <Card className="glass">
         <CardContent className="p-4">
@@ -585,6 +870,7 @@ export default function TeamManagementPage() {
                     variant="outline"
                     size="sm"
                     className="flex-1 bg-transparent"
+                    onClick={() => handleEditClick(team)}
                   >
                     <Edit className="mr-2 h-4 w-4" />
                     Edit

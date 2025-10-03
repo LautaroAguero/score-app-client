@@ -1,19 +1,34 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Trophy, Users, Calendar, TrendingUp, Search, ArrowRight, MapPin, Clock } from "lucide-react"
-import Link from "next/link"
-import { useEffect, useState } from "react"
-import { cn } from "@/lib/utils"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Trophy,
+  Users,
+  Calendar,
+  TrendingUp,
+  Search,
+  ArrowRight,
+  MapPin,
+  Clock,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Mock featured tournaments data
 const featuredTournaments = [
   {
-    id: "1",
+    _id: "1",
     name: "Summer Soccer Championship 2025",
     sport: "Soccer",
     status: "In Progress",
@@ -26,7 +41,7 @@ const featuredTournaments = [
     bannerImage: "/soccer-stadium-championship.jpg",
   },
   {
-    id: "2",
+    _id: "2",
     name: "National Basketball Tournament",
     sport: "Basketball",
     status: "Upcoming",
@@ -39,7 +54,7 @@ const featuredTournaments = [
     bannerImage: "/basketball-arena-tournament.jpg",
   },
   {
-    id: "3",
+    _id: "3",
     name: "International Tennis Open",
     sport: "Tennis",
     status: "Upcoming",
@@ -51,49 +66,57 @@ const featuredTournaments = [
     organizerName: "Global Tennis Federation",
     bannerImage: "/tennis-court-professional.jpg",
   },
-]
+];
 
-function AnimatedCounter({ end, duration = 2000, suffix = "" }: { end: number; duration?: number; suffix?: string }) {
-  const [count, setCount] = useState(0)
+function AnimatedCounter({
+  end,
+  duration = 2000,
+  suffix = "",
+}: {
+  end: number;
+  duration?: number;
+  suffix?: string;
+}) {
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
-    let startTime: number
-    let animationFrame: number
+    let startTime: number;
+    let animationFrame: number;
 
     const animate = (currentTime: number) => {
-      if (!startTime) startTime = currentTime
-      const progress = Math.min((currentTime - startTime) / duration, 1)
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
 
-      setCount(Math.floor(progress * end))
+      setCount(Math.floor(progress * end));
 
       if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate)
+        animationFrame = requestAnimationFrame(animate);
       }
-    }
+    };
 
-    animationFrame = requestAnimationFrame(animate)
+    animationFrame = requestAnimationFrame(animate);
 
-    return () => cancelAnimationFrame(animationFrame)
-  }, [end, duration])
+    return () => cancelAnimationFrame(animationFrame);
+  }, [end, duration]);
 
   return (
     <span>
       {count.toLocaleString()}
       {suffix}
     </span>
-  )
+  );
 }
 
 export default function HomePage() {
-  const [currentSlide, setCurrentSlide] = useState(0)
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % featuredTournaments.length)
-    }, 5000)
+      setCurrentSlide((prev) => (prev + 1) % featuredTournaments.length);
+    }, 5000);
 
-    return () => clearInterval(timer)
-  }, [])
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -113,11 +136,13 @@ export default function HomePage() {
             </Badge>
 
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-balance">
-              Elevate Your <span className="text-accent">Sports Tournaments</span>
+              Elevate Your{" "}
+              <span className="text-accent">Sports Tournaments</span>
             </h1>
 
             <p className="text-xl md:text-2xl text-muted-foreground text-balance max-w-2xl mx-auto">
-              The premier platform for organizing, managing, and discovering professional sports tournaments worldwide
+              The premier platform for organizing, managing, and discovering
+              professional sports tournaments worldwide
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -127,7 +152,12 @@ export default function HomePage() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 bg-transparent" asChild>
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8 bg-transparent"
+                asChild
+              >
                 <Link href="/organizer/register">Become an Organizer</Link>
               </Button>
             </div>
@@ -177,7 +207,9 @@ export default function HomePage() {
               <div className="text-4xl font-bold">
                 <AnimatedCounter end={1247} suffix="+" />
               </div>
-              <div className="text-sm text-muted-foreground">Total Tournaments</div>
+              <div className="text-sm text-muted-foreground">
+                Total Tournaments
+              </div>
             </div>
 
             <div className="text-center space-y-2">
@@ -189,7 +221,9 @@ export default function HomePage() {
               <div className="text-4xl font-bold">
                 <AnimatedCounter end={342} />
               </div>
-              <div className="text-sm text-muted-foreground">Active Matches</div>
+              <div className="text-sm text-muted-foreground">
+                Active Matches
+              </div>
             </div>
 
             <div className="text-center space-y-2">
@@ -201,7 +235,9 @@ export default function HomePage() {
               <div className="text-4xl font-bold">
                 <AnimatedCounter end={45678} suffix="+" />
               </div>
-              <div className="text-sm text-muted-foreground">Registered Users</div>
+              <div className="text-sm text-muted-foreground">
+                Registered Users
+              </div>
             </div>
 
             <div className="text-center space-y-2">
@@ -223,7 +259,9 @@ export default function HomePage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Featured Tournaments</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Featured Tournaments
+            </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Discover the most exciting tournaments happening right now
             </p>
@@ -234,10 +272,12 @@ export default function HomePage() {
             <div className="relative overflow-hidden rounded-xl">
               {featuredTournaments.map((tournament, index) => (
                 <div
-                  key={tournament.id}
+                  key={tournament._id}
                   className={cn(
                     "transition-all duration-500 ease-in-out",
-                    index === currentSlide ? "opacity-100" : "opacity-0 absolute inset-0",
+                    index === currentSlide
+                      ? "opacity-100"
+                      : "opacity-0 absolute inset-0"
                   )}
                 >
                   <Card className="glass border-0 overflow-hidden">
@@ -251,15 +291,23 @@ export default function HomePage() {
 
                       <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">
                         <div className="flex flex-wrap gap-2 mb-3">
-                          <Badge variant="secondary" className="bg-accent text-accent-foreground">
+                          <Badge
+                            variant="secondary"
+                            className="bg-accent text-accent-foreground"
+                          >
                             {tournament.sport}
                           </Badge>
-                          <Badge variant="secondary" className="bg-green-500 text-white">
+                          <Badge
+                            variant="secondary"
+                            className="bg-green-500 text-white"
+                          >
                             {tournament.status}
                           </Badge>
                         </div>
 
-                        <h3 className="text-2xl md:text-3xl font-bold mb-3">{tournament.name}</h3>
+                        <h3 className="text-2xl md:text-3xl font-bold mb-3">
+                          {tournament.name}
+                        </h3>
 
                         <div className="flex flex-wrap gap-4 text-sm mb-4">
                           <div className="flex items-center gap-1">
@@ -277,7 +325,7 @@ export default function HomePage() {
                         </div>
 
                         <Button asChild>
-                          <Link href={`/tournaments/${tournament.id}`}>
+                          <Link href={`/tournaments/${tournament._id}`}>
                             View Details
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </Link>
@@ -297,7 +345,9 @@ export default function HomePage() {
                   onClick={() => setCurrentSlide(index)}
                   className={cn(
                     "h-2 rounded-full transition-all",
-                    index === currentSlide ? "w-8 bg-accent" : "w-2 bg-muted-foreground/30",
+                    index === currentSlide
+                      ? "w-8 bg-accent"
+                      : "w-2 bg-muted-foreground/30"
                   )}
                   aria-label={`Go to slide ${index + 1}`}
                 />
@@ -322,9 +372,12 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto glass-strong rounded-2xl p-8 md:p-12 text-center">
             <Trophy className="h-16 w-16 text-accent mx-auto mb-6" />
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Organize Your Tournament?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Ready to Organize Your Tournament?
+            </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Join thousands of organizers who trust TournamentPro to manage their events professionally and efficiently
+              Join thousands of organizers who trust TournamentPro to manage
+              their events professionally and efficiently
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild>
@@ -341,5 +394,5 @@ export default function HomePage() {
         </div>
       </section>
     </div>
-  )
+  );
 }
