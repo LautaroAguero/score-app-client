@@ -180,9 +180,7 @@ export default function OrganizerDashboardPage() {
 
   const activeTournaments =
     tournaments && tournaments.length > 0
-      ? tournaments.filter(
-          (t) => t.status === "In Progress" || t.status === "Active"
-        ).length
+      ? tournaments.filter((t) => t.status === "inprogress").length
       : 0;
 
   const stats = [
@@ -220,10 +218,9 @@ export default function OrganizerDashboardPage() {
   ];
 
   const statusColors = {
-    Upcoming: "bg-blue-500",
-    "In Progress": "bg-green-500",
-    Active: "bg-green-500",
-    Completed: "bg-gray-500",
+    upcoming: "bg-blue-500",
+    inprogress: "bg-green-500",
+    finished: "bg-gray-500",
   };
 
   return (

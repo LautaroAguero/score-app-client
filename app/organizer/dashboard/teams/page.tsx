@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,7 @@ export default function TeamManagementPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
   const [teams, setTeams] = useState<Team[]>([]);
@@ -82,6 +83,12 @@ export default function TeamManagementPage() {
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
   const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Tournament context from URL
+  const tournamentId = searchParams.get("tournament");
+  const [tournamentContext, setTournamentContext] = useState<Tournament | null>(
+    null
+  );
 
   const [newTeam, setNewTeam] = useState({
     name: "",
@@ -101,10 +108,77 @@ export default function TeamManagementPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [tournamentId]);
+
+  useEffect(() => {
+    if (tournamentId && tournamentContext) {
+      setNewTeam((prev) => ({ ...prev, tournamentId: tournamentId }));
+    }
+  }, [tournamentId, tournamentContext]);
 
   const fetchData = async () => {
-    await Promise.all([fetchTournaments(), fetchTeams()]);
+    if (tournamentId) {
+      // Fetch specific tournament and its teams
+      await Promise.all([
+        fetchTournamentContext(),
+        fetchTeamsForTournament(tournamentId),
+      ]);
+    } else {
+      // Fetch all tournaments and teams
+      await Promise.all([fetchTournaments(), fetchTeams()]);
+    }
+  };
+
+  const fetchTournamentContext = async () => {
+    if (!tournamentId) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await axios.get(
+        `${API_URL}/tournaments/${tournamentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data) {
+        setTournamentContext(response.data.tournament);
+      }
+    } catch (error) {
+      console.error("Error fetching tournament context:", error);
+    }
+  };
+
+  const fetchTeamsForTournament = async (tournamentId: string) => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.get(
+        `${API_URL}/teams?tournament=${tournamentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setTeams(response.data.teams || []);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error loading teams",
+          description: error.response?.data?.message || "Failed to load teams",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchTournaments = async () => {
@@ -228,13 +302,14 @@ export default function TeamManagementPage() {
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesTournament =
+      tournamentId || // If viewing specific tournament, don't filter by tournament
       selectedTournament === "all" ||
       team.tournament._id === selectedTournament;
     return matchesSearch && matchesTournament;
   });
 
   const handleAddTeam = async () => {
-    if (!newTeam.name || !newTeam.tournamentId) {
+    if (!newTeam.name || (!newTeam.tournamentId && !tournamentId)) {
       toast({
         title: "Missing required fields",
         description: "Please fill in team name and select a tournament",
@@ -249,7 +324,7 @@ export default function TeamManagementPage() {
 
       const formData = new FormData();
       formData.append("name", newTeam.name);
-      formData.append("tournament", newTeam.tournamentId);
+      formData.append("tournament", newTeam.tournamentId || tournamentId!);
       if (newTeam.group) {
         formData.append("group", newTeam.group);
       }
@@ -273,7 +348,11 @@ export default function TeamManagementPage() {
 
       // Reset form
       setIsAddDialogOpen(false);
-      setNewTeam({ name: "", tournamentId: "", group: "" });
+      setNewTeam({
+        name: "",
+        tournamentId: tournamentId || "",
+        group: "",
+      });
       setLogoFile(null);
       setLogoPreview(null);
     } catch (error) {
@@ -478,9 +557,15 @@ export default function TeamManagementPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Team Management</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            {tournamentContext
+              ? `Teams - ${tournamentContext.name}`
+              : "Team Management"}
+          </h1>
           <p className="text-muted-foreground">
-            Add and organize teams for your tournaments
+            {tournamentContext
+              ? "Manage teams for this tournament"
+              : "Add and organize teams for your tournaments"}
           </p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -492,9 +577,15 @@ export default function TeamManagementPage() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Team</DialogTitle>
+              <DialogTitle>
+                {tournamentContext
+                  ? `Add Team to ${tournamentContext.name}`
+                  : "Add New Team"}
+              </DialogTitle>
               <DialogDescription>
-                Enter the team details to add them to a tournament
+                {tournamentContext
+                  ? "Enter the team details to add them to this tournament"
+                  : "Enter the team details to add them to a tournament"}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -512,29 +603,41 @@ export default function TeamManagementPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="tournament">Tournament *</Label>
-                <Select
-                  value={newTeam.tournamentId}
-                  onValueChange={(value) =>
-                    setNewTeam({ ...newTeam, tournamentId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select tournament" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tournaments.length === 0 ? (
-                      <div className="p-2 text-sm text-muted-foreground text-center">
-                        No tournaments available
-                      </div>
-                    ) : (
-                      tournaments.map((tournament) => (
-                        <SelectItem key={tournament._id} value={tournament._id}>
-                          {tournament.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                {tournamentContext ? (
+                  <Input
+                    id="tournament"
+                    value={tournamentContext.name}
+                    disabled
+                    className="bg-muted"
+                  />
+                ) : (
+                  <Select
+                    value={newTeam.tournamentId}
+                    onValueChange={(value) =>
+                      setNewTeam({ ...newTeam, tournamentId: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select tournament" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tournaments.length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          No tournaments available
+                        </div>
+                      ) : (
+                        tournaments.map((tournament) => (
+                          <SelectItem
+                            key={tournament._id}
+                            value={tournament._id}
+                          >
+                            {tournament.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -609,7 +712,9 @@ export default function TeamManagementPage() {
               <Button
                 onClick={handleAddTeam}
                 disabled={
-                  !newTeam.name || !newTeam.tournamentId || isSubmitting
+                  !newTeam.name ||
+                  (!newTeam.tournamentId && !tournamentId) ||
+                  isSubmitting
                 }
               >
                 {isSubmitting ? (
@@ -777,22 +882,24 @@ export default function TeamManagementPage() {
                 className="pl-10"
               />
             </div>
-            <Select
-              value={selectedTournament}
-              onValueChange={setSelectedTournament}
-            >
-              <SelectTrigger className="w-full md:w-[250px]">
-                <SelectValue placeholder="Filter by tournament" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Tournaments</SelectItem>
-                {tournaments.map((tournament) => (
-                  <SelectItem key={tournament._id} value={tournament._id}>
-                    {tournament.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!tournamentId && (
+              <Select
+                value={selectedTournament}
+                onValueChange={setSelectedTournament}
+              >
+                <SelectTrigger className="w-full md:w-[250px]">
+                  <SelectValue placeholder="Filter by tournament" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tournaments</SelectItem>
+                  {tournaments.map((tournament) => (
+                    <SelectItem key={tournament._id} value={tournament._id}>
+                      {tournament.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </CardContent>
       </Card>

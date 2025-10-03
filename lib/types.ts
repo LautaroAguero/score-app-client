@@ -1,43 +1,45 @@
 export type SportType =
-  | "Soccer"
-  | "Basketball"
-  | "Tennis"
-  | "Volleyball"
-  | "Cricket"
-  | "Baseball"
-  | "Rugby"
-  | "Hockey";
+  | "soccer"
+  | "basketball"
+  | "volleyball"
+  | "tennis"
+  | "rugby";
 
-export type TournamentStatus = "Upcoming" | "In Progress" | "Completed";
+export type TournamentStatus = "upcoming" | "inprogress" | "finished";
 
-export type TournamentFormat = "League" | "Knockout" | "Hybrid";
+export type TournamentFormat = "league" | "knockout" | "hybrid";
 
 export type MatchStatus =
-  | "Scheduled"
-  | "In Progress"
-  | "Completed"
-  | "Postponed"
-  | "Cancelled";
+  | "scheduled"
+  | "in progress"
+  | "completed"
+  | "postponed"
+  | "cancelled";
 
 export interface Tournament {
   _id: string;
   name: string;
-  sport: SportType;
-  format: TournamentFormat;
-  status: TournamentStatus;
-  startDate: string;
-  endDate: string;
-  location: string;
-  description: string;
-  organizerId: string;
-  organizerName: string;
-  bannerImage?: string;
-  logo?: string;
-  teamsCount: number;
-  currentStage: string;
-  rules?: string;
+  description?: string;
+  createdBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  sportType: SportType;
+  tournamentFormat: TournamentFormat;
+  startDate?: string;
+  endDate?: string;
+  location?: string;
+  numberOfParticipants: number;
   prizes?: string;
-  views: number;
+  tournamentBanner?: string;
+  rules?: string;
+  pointsForWin: number;
+  pointsForDraw: number;
+  pointsForLoss: number;
+  status: TournamentStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Team {
