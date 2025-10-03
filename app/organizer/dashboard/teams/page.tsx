@@ -375,7 +375,6 @@ export default function TeamManagementPage() {
 
   const handleDeleteConfirm = async () => {
     if (!teamToDelete) return;
-    console.log(teamToDelete);
     try {
       setIsDeleting(true);
       const token = localStorage.getItem("token");

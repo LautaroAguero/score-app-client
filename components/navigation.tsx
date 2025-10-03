@@ -34,7 +34,6 @@ export function Navigation() {
   useEffect(() => {
     // Check if user is logged in by checking for token in localStorage
     const checkAuthStatus = () => {
-      console.log("checkiung status");
       const token = localStorage.getItem("token");
       setIsLoggedIn(!!token);
     };

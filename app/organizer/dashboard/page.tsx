@@ -91,7 +91,6 @@ export default function OrganizerDashboardPage() {
       );
 
       if (response.data) {
-        console.log(response.data);
         setTournaments(response.data.tournaments);
       }
     } catch (error) {
