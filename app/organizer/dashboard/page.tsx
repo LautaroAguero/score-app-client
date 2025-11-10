@@ -93,10 +93,11 @@ export default function OrganizerDashboardPage() {
   const [tournamentToDelete, setTournamentToDelete] =
     useState<Tournament | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   // States for more info dialog
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
-  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [selectedTournament, setSelectedTournament] =
+    useState<Tournament | null>(null);
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
   const [standingsData, setStandingsData] = useState<Team[]>([]);
   const [isLoadingInfo, setIsLoadingInfo] = useState(false);
@@ -435,8 +436,8 @@ export default function OrganizerDashboardPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => handleShowMoreInfo(tournament)}
                       >
@@ -571,7 +572,9 @@ export default function OrganizerDashboardPage() {
           {isLoadingInfo ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-accent mr-2" />
-              <span className="text-muted-foreground">Loading tournament details...</span>
+              <span className="text-muted-foreground">
+                Loading tournament details...
+              </span>
             </div>
           ) : (
             <div className="space-y-6">
@@ -597,7 +600,12 @@ export default function OrganizerDashboardPage() {
                               </div>
                             </div>
                             <div className="text-sm text-muted-foreground text-center">
-                              {match.matchDate && format(new Date(match.matchDate), "MMM dd, yyyy")} at {match.matchTime}
+                              {match.matchDate &&
+                                format(
+                                  new Date(match.matchDate),
+                                  "MMM dd, yyyy"
+                                )}{" "}
+                              at {match.matchTime}
                             </div>
                           </div>
                           <Badge variant="outline">{match.status}</Badge>
@@ -630,7 +638,10 @@ export default function OrganizerDashboardPage() {
                       </TableHeader>
                       <TableBody>
                         {standingsData.map((team, index) => (
-                          <TableRow key={team._id} className="hover:bg-muted/50">
+                          <TableRow
+                            key={team._id}
+                            className="hover:bg-muted/50"
+                          >
                             <TableCell className="font-semibold">
                               {index + 1}
                             </TableCell>
