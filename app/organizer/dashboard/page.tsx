@@ -21,6 +21,7 @@ import {
   MoreVertical,
   Loader2,
   Trash2,
+  ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -37,9 +38,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 
 interface Tournament {
   _id: string;
@@ -54,6 +64,26 @@ interface Tournament {
   tournamentFormat?: string;
 }
 
+interface Match {
+  _id: string;
+  homeTeam: { _id: string; name: string };
+  awayTeam: { _id: string; name: string };
+  matchDate: string;
+  matchTime: string;
+  scores?: { home: number; away: number };
+  status: string;
+}
+
+interface Team {
+  _id: string;
+  name: string;
+  group?: string;
+  wins?: number;
+  draws?: number;
+  losses?: number;
+  points?: number;
+}
+
 export default function OrganizerDashboardPage() {
   const { toast } = useToast();
   const router = useRouter();
@@ -63,6 +93,13 @@ export default function OrganizerDashboardPage() {
   const [tournamentToDelete, setTournamentToDelete] =
     useState<Tournament | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // States for more info dialog
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
+  const [standingsData, setStandingsData] = useState<Team[]>([]);
+  const [isLoadingInfo, setIsLoadingInfo] = useState(false);
 
   useEffect(() => {
     fetchTournaments();
@@ -119,6 +156,56 @@ export default function OrganizerDashboardPage() {
   const handleDeleteClick = (tournament: Tournament) => {
     setTournamentToDelete(tournament);
     setDeleteDialogOpen(true);
+  };
+
+  const handleShowMoreInfo = async (tournament: Tournament) => {
+    setSelectedTournament(tournament);
+    setInfoDialogOpen(true);
+    setIsLoadingInfo(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      // Fetch upcoming matches
+      const matchesResponse = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/matches?tournament=${tournament._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Filter upcoming matches (status !== 'finished')
+      const upcoming = (matchesResponse.data.matches || [])
+        .filter((match: Match) => match.status !== "finished")
+        .slice(0, 5); // Show only 5 upcoming matches
+
+      setUpcomingMatches(upcoming);
+
+      // Fetch teams for standings
+      const teamsResponse = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/teams?tournament=${tournament._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Sort by points
+      const standings = (teamsResponse.data.teams || []).sort(
+        (a: Team, b: Team) => (b.points || 0) - (a.points || 0)
+      );
+
+      setStandingsData(standings);
+    } catch (error) {
+      console.error("Error loading tournament info:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load tournament details",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingInfo(false);
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -348,6 +435,14 @@ export default function OrganizerDashboardPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleShowMoreInfo(tournament)}
+                      >
+                        <ChevronDown className="mr-2 h-4 w-4" />
+                        More Info
+                      </Button>
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/tournaments/${tournament._id}`}>
                           <Eye className="mr-2 h-4 w-4" />
@@ -456,6 +551,127 @@ export default function OrganizerDashboardPage() {
                   Delete Tournament
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tournament Info Dialog */}
+      <Dialog open={infoDialogOpen} onOpenChange={setInfoDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              {selectedTournament?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Tournament details and upcoming matches
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingInfo ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-accent mr-2" />
+              <span className="text-muted-foreground">Loading tournament details...</span>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Upcoming Matches */}
+              <div>
+                <h3 className="font-semibold text-lg mb-4">Upcoming Matches</h3>
+                {upcomingMatches.length > 0 ? (
+                  <div className="space-y-3">
+                    {upcomingMatches.map((match) => (
+                      <div
+                        key={match._id}
+                        className="glass-strong rounded-lg p-4"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="font-semibold text-center flex-1">
+                                {match.homeTeam.name}
+                              </div>
+                              <div className="px-3 font-bold text-lg">VS</div>
+                              <div className="font-semibold text-center flex-1">
+                                {match.awayTeam.name}
+                              </div>
+                            </div>
+                            <div className="text-sm text-muted-foreground text-center">
+                              {match.matchDate && format(new Date(match.matchDate), "MMM dd, yyyy")} at {match.matchTime}
+                            </div>
+                          </div>
+                          <Badge variant="outline">{match.status}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">
+                    No upcoming matches
+                  </p>
+                )}
+              </div>
+
+              {/* Standings Table */}
+              <div>
+                <h3 className="font-semibold text-lg mb-4">Standings</h3>
+                {standingsData.length > 0 ? (
+                  <div className="rounded-lg border border-border/50 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="w-12">Pos</TableHead>
+                          <TableHead>Team</TableHead>
+                          <TableHead className="text-center w-12">W</TableHead>
+                          <TableHead className="text-center w-12">D</TableHead>
+                          <TableHead className="text-center w-12">L</TableHead>
+                          <TableHead className="text-right w-16">Pts</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {standingsData.map((team, index) => (
+                          <TableRow key={team._id} className="hover:bg-muted/50">
+                            <TableCell className="font-semibold">
+                              {index + 1}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {team.name}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {team.wins || 0}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {team.draws || 0}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {team.losses || 0}
+                            </TableCell>
+                            <TableCell className="text-right font-bold">
+                              {team.points || 0}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">
+                    No standings data available
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInfoDialogOpen(false)}>
+              Close
+            </Button>
+            <Button asChild>
+              <Link href={`/tournaments/${selectedTournament?._id}`}>
+                <Eye className="mr-2 h-4 w-4" />
+                View Full Tournament
+              </Link>
             </Button>
           </DialogFooter>
         </DialogContent>
