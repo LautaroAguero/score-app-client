@@ -23,6 +23,7 @@ Score App Client es una aplicación Next.js moderna para gestionar torneos depor
 ## 🚀 Quick Start
 
 ### Prerrequisitos
+
 - Node.js 18+
 - npm o yarn
 - Backend API corriendo en `http://localhost:4000`
@@ -204,12 +205,14 @@ El token se almacena en `localStorage` y se incluye automáticamente en todas la
 ## 🎨 Design System
 
 ### Colors
+
 - **Primary**: Blue accent
 - **Secondary**: Neutral gray
 - **Success**: Green
 - **Destructive**: Red
 
 ### Components
+
 - **Card**: Glass effect (frosted glass)
 - **Button**: Multiple variants (default, outline, ghost, destructive)
 - **Input**: Form inputs con validación
@@ -218,6 +221,7 @@ El token se almacena en `localStorage` y se incluye automáticamente en todas la
 - **Toast**: Notifications
 
 ### Responsive Design
+
 - Mobile-first approach
 - Flexbox & Grid layouts
 - Touch-friendly tap targets
@@ -228,6 +232,7 @@ El token se almacena en `localStorage` y se incluye automáticamente en todas la
 ## ✨ Características Principales
 
 ### Autenticación
+
 - ✅ Registro de nuevos usuarios
 - ✅ Login con email/password
 - ✅ JWT token management
@@ -235,6 +240,7 @@ El token se almacena en `localStorage` y se incluye automáticamente en todas la
 - ✅ Perfil de usuario editable
 
 ### Gestión de Torneos
+
 - ✅ Crear torneos con banner personalizado
 - ✅ Editar información del torneo
 - ✅ Eliminar torneos
@@ -242,6 +248,7 @@ El token se almacena en `localStorage` y se incluye automáticamente en todas la
 - ✅ Filtrar y buscar
 
 ### Gestión de Equipos
+
 - ✅ Crear equipos por torneo
 - ✅ Cargar logo del equipo
 - ✅ Editar información del equipo
@@ -249,6 +256,7 @@ El token se almacena en `localStorage` y se incluye automáticamente en todas la
 - ✅ Asignar grupo/division
 
 ### Programación de Partidos
+
 - ✅ Crear partidos (fecha, hora, equipos)
 - ✅ Cambiar estado (pending → live → finished)
 - ✅ Actualizar scores en tiempo real
@@ -256,6 +264,7 @@ El token se almacena en `localStorage` y se incluye automáticamente en todas la
 - ✅ Ver historial de partidos
 
 ### Gestión de Jugadores
+
 - ✅ Registrar jugadores (nombre, número, posición)
 - ✅ Capturar datos biométricos (altura, peso)
 - ✅ Fecha de nacimiento y nacionalidad
@@ -264,6 +273,7 @@ El token se almacena en `localStorage` y se incluye automáticamente en todas la
 - ✅ Validaciones automáticas
 
 ### Interfaz de Usuario
+
 - ✅ Loading states (spinners)
 - ✅ Error handling (toast notifications)
 - ✅ Empty states (mensajes contextuales)
@@ -302,27 +312,35 @@ npm test
 ## 🐛 Troubleshooting
 
 ### API Connection Error
+
 ```
 Error: Cannot reach http://localhost:4000
 ```
+
 **Solución:** Asegurate que el backend API está corriendo en `localhost:4000`
 
 ### Token Invalid / Session Expired
+
 ```
 Status 401: Unauthorized
 ```
+
 **Solución:** Haz login nuevamente. El token expirado redirige automáticamente a login.
 
 ### Image Not Displaying
+
 ```
 Error: Image is missing required "src" property
 ```
+
 **Solución:** Las imágenes externas deben estar configuradas en `next.config.mjs` bajo `remotePatterns`
 
 ### Port Already in Use
+
 ```
 Error: Port 3000 already in use
 ```
+
 **Solución:** `npm run dev -- -p 3001` (usar otro puerto)
 
 ---
@@ -330,6 +348,7 @@ Error: Port 3000 already in use
 ## 📞 Contacto & Soporte
 
 Para más información sobre arquitectura y guidelines, ver:
+
 - `.github/copilot-instructions.md` - Arquitectura y patrones
 - `.github/doc/` - Documentación detallada
 

@@ -29,9 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Calendar,
-} from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
@@ -152,11 +150,14 @@ export default function PlayerManagementPage() {
       // Fetch teams for selected tournament
       let teamsRes;
       if (selectedTournament !== "all") {
-        teamsRes = await axios.get(`${API_URL}/teams?tournament=${selectedTournament}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        teamsRes = await axios.get(
+          `${API_URL}/teams?tournament=${selectedTournament}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
       } else {
         teamsRes = await axios.get(`${API_URL}/teams`, {
           headers: {
@@ -169,11 +170,14 @@ export default function PlayerManagementPage() {
       // Fetch players for selected team
       let playersRes;
       if (selectedTeam !== "all") {
-        playersRes = await axios.get(`${API_URL}/players?team=${selectedTeam}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        playersRes = await axios.get(
+          `${API_URL}/players?team=${selectedTeam}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
       } else if (selectedTournament !== "all") {
         // Fetch players for all teams in selected tournament
         playersRes = await axios.get(
@@ -196,8 +200,7 @@ export default function PlayerManagementPage() {
       if (axios.isAxiosError(error)) {
         toast({
           title: "Error loading data",
-          description:
-            error.response?.data?.message || "Failed to load data",
+          description: error.response?.data?.message || "Failed to load data",
           variant: "destructive",
         });
       }
@@ -428,9 +431,7 @@ export default function PlayerManagementPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-2">Player Management</h1>
-          <p className="text-muted-foreground">
-            Manage players for your teams
-          </p>
+          <p className="text-muted-foreground">Manage players for your teams</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -635,7 +636,10 @@ export default function PlayerManagementPage() {
           </div>
         </div>
 
-        <Select value={selectedTournament} onValueChange={setSelectedTournament}>
+        <Select
+          value={selectedTournament}
+          onValueChange={setSelectedTournament}
+        >
           <SelectTrigger className="w-full md:w-48">
             <SelectValue placeholder="Filter by tournament" />
           </SelectTrigger>
@@ -688,7 +692,10 @@ export default function PlayerManagementPage() {
       ) : (
         <div className="grid gap-4">
           {filteredPlayers.map((player) => (
-            <Card key={player._id} className="glass-strong hover:shadow-lg transition-shadow">
+            <Card
+              key={player._id}
+              className="glass-strong hover:shadow-lg transition-shadow"
+            >
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex-1 space-y-2">
@@ -719,7 +726,8 @@ export default function PlayerManagementPage() {
 
                     {player.dateOfBirth && (
                       <p className="text-xs text-muted-foreground">
-                        DOB: {format(new Date(player.dateOfBirth), "MMM dd, yyyy")}
+                        DOB:{" "}
+                        {format(new Date(player.dateOfBirth), "MMM dd, yyyy")}
                       </p>
                     )}
                   </div>
@@ -753,9 +761,7 @@ export default function PlayerManagementPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Player</DialogTitle>
-            <DialogDescription>
-              Update player information
-            </DialogDescription>
+            <DialogDescription>Update player information</DialogDescription>
           </DialogHeader>
           {playerToEdit && (
             <div className="space-y-4 py-4">
@@ -916,8 +922,8 @@ export default function PlayerManagementPage() {
             <DialogTitle>Delete Player</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete{" "}
-              <span className="font-semibold">{playerToDelete?.name}</span>? This
-              action cannot be undone.
+              <span className="font-semibold">{playerToDelete?.name}</span>?
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 pt-4">

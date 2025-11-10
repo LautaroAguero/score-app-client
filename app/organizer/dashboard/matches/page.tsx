@@ -909,8 +909,13 @@ export default function MatchManagementPage() {
             <DialogTitle>Delete Match</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete the match between{" "}
-              <span className="font-semibold">{matchToDelete?.homeTeam.name}</span>{" "}
-              and <span className="font-semibold">{matchToDelete?.awayTeam.name}</span>
+              <span className="font-semibold">
+                {matchToDelete?.homeTeam.name}
+              </span>{" "}
+              and{" "}
+              <span className="font-semibold">
+                {matchToDelete?.awayTeam.name}
+              </span>
               ? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>

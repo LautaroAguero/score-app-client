@@ -14,7 +14,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Mail, Building2, Phone, Briefcase, ArrowLeft } from "lucide-react";
+import {
+  Loader2,
+  User,
+  Mail,
+  Building2,
+  Phone,
+  Briefcase,
+  ArrowLeft,
+} from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -99,7 +107,8 @@ export default function ProfilePage() {
 
         toast({
           title: "Error loading profile",
-          description: error.response?.data?.message || "Failed to load profile",
+          description:
+            error.response?.data?.message || "Failed to load profile",
           variant: "destructive",
         });
       }
@@ -232,7 +241,8 @@ export default function ProfilePage() {
 
         toast({
           title: "Error updating profile",
-          description: error.response?.data?.message || "Failed to update profile",
+          description:
+            error.response?.data?.message || "Failed to update profile",
           variant: "destructive",
         });
       }
@@ -309,7 +319,9 @@ export default function ProfilePage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold">User Profile</h1>
-              <p className="text-muted-foreground">Manage your account settings</p>
+              <p className="text-muted-foreground">
+                Manage your account settings
+              </p>
             </div>
           </div>
         </div>
@@ -339,7 +351,9 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle>Profile Information</CardTitle>
             {!isEditing && (
-              <CardDescription>Click edit to update your profile</CardDescription>
+              <CardDescription>
+                Click edit to update your profile
+              </CardDescription>
             )}
           </CardHeader>
           <CardContent>
@@ -366,7 +380,10 @@ export default function ProfilePage() {
 
                 {/* Organization */}
                 <div className="space-y-2">
-                  <Label htmlFor="organization" className="flex items-center gap-2">
+                  <Label
+                    htmlFor="organization"
+                    className="flex items-center gap-2"
+                  >
                     <Building2 className="h-4 w-4" />
                     Organization
                   </Label>
@@ -385,7 +402,10 @@ export default function ProfilePage() {
 
                 {/* Phone Number */}
                 <div className="space-y-2">
-                  <Label htmlFor="phoneNumber" className="flex items-center gap-2">
+                  <Label
+                    htmlFor="phoneNumber"
+                    className="flex items-center gap-2"
+                  >
                     <Phone className="h-4 w-4" />
                     Phone Number
                   </Label>
@@ -400,7 +420,10 @@ export default function ProfilePage() {
 
                 {/* Experience */}
                 <div className="space-y-2">
-                  <Label htmlFor="experience" className="flex items-center gap-2">
+                  <Label
+                    htmlFor="experience"
+                    className="flex items-center gap-2"
+                  >
                     <Briefcase className="h-4 w-4" />
                     Experience
                   </Label>
@@ -424,7 +447,9 @@ export default function ProfilePage() {
                     disabled={isSaving}
                     className="flex-1"
                   >
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isSaving && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
                     {isSaving ? "Saving..." : "Save Changes"}
                   </Button>
                   <Button
