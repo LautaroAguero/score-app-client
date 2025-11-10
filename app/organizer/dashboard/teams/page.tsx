@@ -335,6 +335,7 @@ export default function TeamManagementPage() {
       const response = await axios.post(`${API_URL}/teams`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
       });
 
@@ -442,7 +443,7 @@ export default function TeamManagementPage() {
 
       const formData = new FormData();
       formData.append("name", editTeam.name);
-      formData.append("tournamentId", editTeam.tournamentId);
+      formData.append("tournament", editTeam.tournamentId);
       if (editTeam.group) {
         formData.append("group", editTeam.group);
       }
@@ -456,6 +457,7 @@ export default function TeamManagementPage() {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
           },
         }
       );

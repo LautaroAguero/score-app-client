@@ -7,7 +7,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Trophy, LayoutDashboard, Calendar, Users, Settings, TrendingUp, Plus, Menu, X, LogOut } from "lucide-react"
+import { Trophy, LayoutDashboard, Calendar, Users, Settings, TrendingUp, Plus, Menu, X, LogOut, Users2 } from "lucide-react"
 
 const sidebarItems = [
   { href: "/organizer/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -15,6 +15,7 @@ const sidebarItems = [
   { href: "/organizer/dashboard/create", label: "Create Tournament", icon: Plus },
   { href: "/organizer/dashboard/matches", label: "Match Management", icon: Calendar },
   { href: "/organizer/dashboard/teams", label: "Team Management", icon: Users },
+  { href: "/organizer/dashboard/players", label: "Player Management", icon: Users2 },
   { href: "/organizer/dashboard/analytics", label: "Analytics", icon: TrendingUp },
   { href: "/organizer/dashboard/settings", label: "Settings", icon: Settings },
 ]

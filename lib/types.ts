@@ -73,10 +73,8 @@ export interface Match {
   homeTeamScore?: number;
   awayTeamScore?: number;
   status: MatchStatus;
-  date?: string;
-  time?: string;
-  venue: string;
-  stage: string;
+  matchDate?: string; // ISO 8601 timestamp
+  matchTime?: string; // HH:MM format
   createdAt?: string;
   updatedAt?: string;
 }

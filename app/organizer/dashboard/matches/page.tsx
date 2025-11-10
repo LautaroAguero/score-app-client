@@ -41,6 +41,7 @@ import {
   Play,
   CheckCircle2,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -63,7 +64,10 @@ export default function MatchManagementPage() {
   const [selectedTournament, setSelectedTournament] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isScoreDialogOpen, setIsScoreDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Tournament context from URL query parameter
   const tournamentId = searchParams.get("tournament");
@@ -77,8 +81,6 @@ export default function MatchManagementPage() {
     awayTeam: "",
     date: undefined as Date | undefined,
     time: "",
-    venue: "",
-    stage: "",
   });
 
   useEffect(() => {
@@ -245,7 +247,7 @@ export default function MatchManagementPage() {
       setIsLoading(true);
       const token = localStorage.getItem("token");
 
-      const response = await axios.get(`${API_URL}/matches/tournament/${id}`, {
+      const response = await axios.get(`${API_URL}/matches?tournament=${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -294,9 +296,7 @@ export default function MatchManagementPage() {
       !newMatch.homeTeam ||
       !newMatch.awayTeam ||
       !newMatch.date ||
-      !newMatch.time ||
-      !newMatch.venue ||
-      !newMatch.stage
+      !newMatch.time
     ) {
       toast({
         title: "Missing required fields",
@@ -314,10 +314,8 @@ export default function MatchManagementPage() {
         tournament: tournamentToUse,
         homeTeam: newMatch.homeTeam,
         awayTeam: newMatch.awayTeam,
-        date: newMatch.date.toISOString().split("T")[0], // Format as YYYY-MM-DD
-        time: newMatch.time,
-        venue: newMatch.venue,
-        stage: newMatch.stage,
+        matchDate: newMatch.date.toISOString(), // ISO 8601 format
+        matchTime: newMatch.time,
       };
 
       const response = await axios.post(`${API_URL}/matches`, matchData, {
@@ -339,8 +337,6 @@ export default function MatchManagementPage() {
         awayTeam: "",
         date: undefined,
         time: "",
-        venue: "",
-        stage: "",
       });
 
       // Refresh the matches list
@@ -486,6 +482,52 @@ export default function MatchManagementPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDeleteClick = (match: Match) => {
+    setMatchToDelete(match);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!matchToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      const token = localStorage.getItem("token");
+
+      await axios.delete(`${API_URL}/matches/${matchToDelete._id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      toast({
+        title: "Match deleted",
+        description: `${matchToDelete.homeTeam.name} vs ${matchToDelete.awayTeam.name} has been deleted.`,
+      });
+
+      // Remove the deleted match from the list
+      setMatches(matches.filter((m) => m._id !== matchToDelete._id));
+      setIsDeleteDialogOpen(false);
+      setMatchToDelete(null);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error deleting match",
+          description:
+            error.response?.data?.message || "Failed to delete match",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setIsDeleteDialogOpen(false);
+    setMatchToDelete(null);
   };
 
   return (
@@ -655,7 +697,7 @@ export default function MatchManagementPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="time">Match Time *</Label>
+                  <Label htmlFor="time">Match Time (HH:MM) *</Label>
                   <Input
                     id="time"
                     type="time"
@@ -665,30 +707,6 @@ export default function MatchManagementPage() {
                     }
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="venue">Venue *</Label>
-                <Input
-                  id="venue"
-                  placeholder="e.g., Central Stadium"
-                  value={newMatch.venue}
-                  onChange={(e) =>
-                    setNewMatch({ ...newMatch, venue: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="stage">Stage *</Label>
-                <Input
-                  id="stage"
-                  placeholder="e.g., Quarter Finals"
-                  value={newMatch.stage}
-                  onChange={(e) =>
-                    setNewMatch({ ...newMatch, stage: e.target.value })
-                  }
-                />
               </div>
             </div>
             <div className="flex justify-end gap-2">
@@ -706,8 +724,6 @@ export default function MatchManagementPage() {
                   !newMatch.awayTeam ||
                   !newMatch.date ||
                   !newMatch.time ||
-                  !newMatch.venue ||
-                  !newMatch.stage ||
                   isSubmitting
                 }
               >
@@ -796,6 +812,7 @@ export default function MatchManagementPage() {
                   setIsScoreDialogOpen(true);
                 }}
                 onEndMatch={() => handleEndMatch(match)}
+                onDeleteClick={() => handleDeleteClick(match)}
                 isSubmitting={isSubmitting}
               />
             ))
@@ -827,6 +844,7 @@ export default function MatchManagementPage() {
                 key={match._id}
                 match={match}
                 onStartMatch={() => handleStartMatch(match)}
+                onDeleteClick={() => handleDeleteClick(match)}
                 isSubmitting={isSubmitting}
               />
             ))
@@ -854,7 +872,11 @@ export default function MatchManagementPage() {
             </Card>
           ) : (
             completedMatches.map((match) => (
-              <MatchCard key={match._id} match={match} />
+              <MatchCard
+                key={match._id}
+                match={match}
+                onDeleteClick={() => handleDeleteClick(match)}
+              />
             ))
           )}
         </TabsContent>
@@ -879,6 +901,44 @@ export default function MatchManagementPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Match</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the match between{" "}
+              <span className="font-semibold">{matchToDelete?.homeTeam.name}</span>{" "}
+              and <span className="font-semibold">{matchToDelete?.awayTeam.name}</span>
+              ? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Match"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -888,12 +948,14 @@ function MatchCard({
   onStartMatch,
   onUpdateScore,
   onEndMatch,
+  onDeleteClick,
   isSubmitting = false,
 }: {
   match: Match;
   onStartMatch?: () => void;
   onUpdateScore?: () => void;
   onEndMatch?: () => void;
+  onDeleteClick?: () => void;
   isSubmitting?: boolean;
 }) {
   const statusColors: Record<string, string> = {
@@ -922,9 +984,6 @@ function MatchCard({
           {/* Match Info */}
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">
-                {match.stage}
-              </Badge>
               <Badge
                 className={cn(
                   "text-xs text-white",
@@ -988,22 +1047,18 @@ function MatchCard({
 
             {/* Match Details */}
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-              {match.date && (
+              {match.matchDate && (
                 <div className="flex items-center gap-1">
                   <CalendarIcon className="h-4 w-4" />
-                  {format(new Date(match.date), "MMM dd, yyyy")}
+                  {format(new Date(match.matchDate), "MMM dd, yyyy")}
                 </div>
               )}
-              {match.time && (
+              {match.matchTime && (
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  {match.time}
+                  {match.matchTime}
                 </div>
               )}
-              <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                {match.venue}
-              </div>
             </div>
           </div>
 
@@ -1070,6 +1125,17 @@ function MatchCard({
               >
                 <CheckCircle2 className="mr-2 h-4 w-4" />
                 Completed
+              </Button>
+            )}
+            {onDeleteClick && (
+              <Button
+                onClick={onDeleteClick}
+                variant="destructive"
+                size="sm"
+                className="w-full mt-2"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
               </Button>
             )}
           </div>
