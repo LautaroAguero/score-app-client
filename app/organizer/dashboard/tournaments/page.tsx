@@ -417,14 +417,29 @@ export default function OrganizerTournamentsPage() {
 
                       {/* Actions */}
                       <div className="flex flex-col sm:flex-row gap-2 min-w-[200px]">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleShowMoreInfo(tournament)}
-                        >
-                          <ChevronDown className="mr-2 h-4 w-4" />
-                          More Info
-                        </Button>
+                        {tournament.status === "setup" ? (
+                          <Button
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700"
+                            asChild
+                          >
+                            <Link
+                              href={`/organizer/dashboard/tournaments/${tournament._id}/setup`}
+                            >
+                              <Trophy className="mr-2 h-4 w-4" />
+                              Setup
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleShowMoreInfo(tournament)}
+                          >
+                            <ChevronDown className="mr-2 h-4 w-4" />
+                            More Info
+                          </Button>
+                        )}
                         <Button variant="outline" size="sm" asChild>
                           <Link href={`/tournaments/${tournament._id}`}>
                             <Eye className="mr-2 h-4 w-4" />

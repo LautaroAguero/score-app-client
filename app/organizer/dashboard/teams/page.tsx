@@ -93,12 +93,12 @@ export default function TeamManagementPage() {
   const [newTeam, setNewTeam] = useState({
     name: "",
     tournamentId: "",
-    group: "",
+    group: "none",
   });
   const [editTeam, setEditTeam] = useState({
     name: "",
     tournamentId: "",
-    group: "",
+    group: "none",
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -325,7 +325,7 @@ export default function TeamManagementPage() {
       const formData = new FormData();
       formData.append("name", newTeam.name);
       formData.append("tournament", newTeam.tournamentId || tournamentId!);
-      if (newTeam.group) {
+      if (newTeam.group && newTeam.group !== "none") {
         formData.append("group", newTeam.group);
       }
       if (logoFile) {
@@ -352,7 +352,7 @@ export default function TeamManagementPage() {
       setNewTeam({
         name: "",
         tournamentId: tournamentId || "",
-        group: "",
+        group: "none",
       });
       setLogoFile(null);
       setLogoPreview(null);
@@ -444,7 +444,7 @@ export default function TeamManagementPage() {
       const formData = new FormData();
       formData.append("name", editTeam.name);
       formData.append("tournament", editTeam.tournamentId);
-      if (editTeam.group) {
+      if (editTeam.group && editTeam.group !== "none") {
         formData.append("group", editTeam.group);
       }
       if (editLogoFile) {
@@ -475,7 +475,7 @@ export default function TeamManagementPage() {
       // Reset form and close dialog
       setIsEditDialogOpen(false);
       setTeamToEdit(null);
-      setEditTeam({ name: "", tournamentId: "", group: "" });
+      setEditTeam({ name: "", tournamentId: "", group: "none" });
       setEditLogoFile(null);
       setEditLogoPreview(null);
     } catch (error) {
@@ -643,14 +643,23 @@ export default function TeamManagementPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="group">Group (Optional)</Label>
-                <Input
-                  id="group"
-                  placeholder="e.g., Group A"
+                <Select
                   value={newTeam.group}
-                  onChange={(e) =>
-                    setNewTeam({ ...newTeam, group: e.target.value })
+                  onValueChange={(value) =>
+                    setNewTeam({ ...newTeam, group: value })
                   }
-                />
+                >
+                  <SelectTrigger id="group">
+                    <SelectValue placeholder="Select a group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="A">Group A</SelectItem>
+                    <SelectItem value="B">Group B</SelectItem>
+                    <SelectItem value="C">Group C</SelectItem>
+                    <SelectItem value="D">Group D</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -783,14 +792,23 @@ export default function TeamManagementPage() {
 
             <div className="space-y-2">
               <Label htmlFor="editGroup">Group (Optional)</Label>
-              <Input
-                id="editGroup"
-                placeholder="e.g., Group A"
+              <Select
                 value={editTeam.group}
-                onChange={(e) =>
-                  setEditTeam({ ...editTeam, group: e.target.value })
+                onValueChange={(value) =>
+                  setEditTeam({ ...editTeam, group: value })
                 }
-              />
+              >
+                <SelectTrigger id="editGroup">
+                  <SelectValue placeholder="Select a group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="A">Group A</SelectItem>
+                  <SelectItem value="B">Group B</SelectItem>
+                  <SelectItem value="C">Group C</SelectItem>
+                  <SelectItem value="D">Group D</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

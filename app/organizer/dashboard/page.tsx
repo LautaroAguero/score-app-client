@@ -436,14 +436,29 @@ export default function OrganizerDashboardPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleShowMoreInfo(tournament)}
-                      >
-                        <ChevronDown className="mr-2 h-4 w-4" />
-                        More Info
-                      </Button>
+                      {tournament.status === "setup" ? (
+                        <Button
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700"
+                          asChild
+                        >
+                          <Link
+                            href={`/organizer/dashboard/tournaments/${tournament._id}/setup`}
+                          >
+                            <Trophy className="mr-2 h-4 w-4" />
+                            Setup
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleShowMoreInfo(tournament)}
+                        >
+                          <ChevronDown className="mr-2 h-4 w-4" />
+                          More Info
+                        </Button>
+                      )}
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/tournaments/${tournament._id}`}>
                           <Eye className="mr-2 h-4 w-4" />
@@ -578,6 +593,24 @@ export default function OrganizerDashboardPage() {
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Setup Alert Banner */}
+              {selectedTournament?.status === "setup" ||
+              (selectedTournament?.status === "draft" &&
+                selectedTournament?.numberOfParticipants === 0) ? (
+                <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 p-4 flex items-start gap-3">
+                  <Trophy className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-blue-700">
+                      Tournament setup pending
+                    </p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      This tournament is ready to be configured. Click the
+                      "Setup Tournament" button to add teams, generate matches,
+                      and schedule games.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
               {/* Upcoming Matches */}
               <div>
                 <h3 className="font-semibold text-lg mb-4">Upcoming Matches</h3>
@@ -674,10 +707,22 @@ export default function OrganizerDashboardPage() {
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-3">
             <Button variant="outline" onClick={() => setInfoDialogOpen(false)}>
               Close
             </Button>
+            {selectedTournament?.status === "setup" ||
+            (selectedTournament?.status === "draft" &&
+              selectedTournament?.numberOfParticipants === 0) ? (
+              <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                <Link
+                  href={`/organizer/dashboard/tournaments/${selectedTournament?._id}/setup`}
+                >
+                  <Trophy className="mr-2 h-4 w-4" />
+                  Setup Tournament
+                </Link>
+              </Button>
+            ) : null}
             <Button asChild>
               <Link href={`/tournaments/${selectedTournament?._id}`}>
                 <Eye className="mr-2 h-4 w-4" />
