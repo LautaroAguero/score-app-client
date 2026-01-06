@@ -194,14 +194,11 @@ export default function TeamManagementPage() {
         return;
       }
 
-      const response = await axios.get(
-        `${API_URL}/tournaments`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axios.get(`${API_URL}/tournaments`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setTournaments(response.data.tournaments || []);
     } catch (error) {
@@ -324,14 +321,14 @@ export default function TeamManagementPage() {
 
       const formData = new FormData();
       formData.append("name", newTeam.name);
-      
+
       // Only add tournament if provided (it's optional)
       if (tournamentId) {
         formData.append("tournament", tournamentId);
       } else if (newTeam.tournamentId) {
         formData.append("tournament", newTeam.tournamentId);
       }
-      
+
       if (newTeam.group && newTeam.group !== "none") {
         formData.append("group", newTeam.group);
       }
@@ -480,16 +477,12 @@ export default function TeamManagementPage() {
         formData.append("teamLogo", editLogoFile);
       }
 
-      const response = await axios.put(
-        `${API_URL}/teams/${teamId}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axios.put(`${API_URL}/teams/${teamId}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       toast({
         title: "Team updated",
@@ -498,7 +491,9 @@ export default function TeamManagementPage() {
 
       // Update team in the list
       setTeams(
-        teams.map((t) => ((t._id || (t as any).id) === teamId ? response.data.team : t))
+        teams.map((t) =>
+          (t._id || (t as any).id) === teamId ? response.data.team : t
+        )
       );
 
       // Reset form and close dialog
@@ -661,7 +656,8 @@ export default function TeamManagementPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    You can create the team now and register it to tournaments later
+                    You can create the team now and register it to tournaments
+                    later
                   </p>
                 </div>
               )}
@@ -990,7 +986,9 @@ export default function TeamManagementPage() {
                     <div>
                       <CardTitle className="text-lg">{team.name}</CardTitle>
                       <CardDescription className="text-sm">
-                        {team.tournament ? team.tournament.name : "No tournament assigned"}
+                        {team.tournament
+                          ? team.tournament.name
+                          : "No tournament assigned"}
                       </CardDescription>
                     </div>
                   </div>

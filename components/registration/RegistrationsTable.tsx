@@ -49,7 +49,9 @@ export function RegistrationsTable({
             <TableHead>Solicitado por</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead>Estado</TableHead>
-            {showActions && <TableHead className="text-right">Acciones</TableHead>}
+            {showActions && (
+              <TableHead className="text-right">Acciones</TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -62,7 +64,9 @@ export function RegistrationsTable({
               </TableCell>
               <TableCell>
                 <div>
-                  <p className="font-medium text-sm">{registration.user.name}</p>
+                  <p className="font-medium text-sm">
+                    {registration.user.name}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {registration.user.email}
                   </p>

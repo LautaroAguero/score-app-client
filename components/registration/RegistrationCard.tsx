@@ -1,6 +1,12 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { RegistrationStatusBadge } from "./RegistrationStatusBadge";
 import type { Registration } from "@/lib/types";
 import { format } from "date-fns";

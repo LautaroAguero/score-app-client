@@ -154,8 +154,7 @@ export default function RegisterPage() {
         toast({
           title: "Error en el registro",
           description:
-            error.response?.data?.message ||
-            "No se pudo completar el registro",
+            error.response?.data?.message || "No se pudo completar el registro",
           variant: "destructive",
         });
       } else {
@@ -202,9 +201,7 @@ export default function RegisterPage() {
                   </div>
                   <CardTitle>Dueño de Equipo</CardTitle>
                 </div>
-                <CardDescription>
-                  Crea y gestiona equipos
-                </CardDescription>
+                <CardDescription>Crea y gestiona equipos</CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm text-muted-foreground">
@@ -244,26 +241,32 @@ export default function RegisterPage() {
                   </div>
                   <CardTitle>Organizador</CardTitle>
                 </div>
-                <CardDescription>
-                  Crea y gestiona torneos
-                </CardDescription>
+                <CardDescription>Crea y gestiona torneos</CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
-                    <span className="text-green-600 dark:text-green-400">✓</span>
+                    <span className="text-green-600 dark:text-green-400">
+                      ✓
+                    </span>
                     Crear torneos
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-green-600 dark:text-green-400">✓</span>
+                    <span className="text-green-600 dark:text-green-400">
+                      ✓
+                    </span>
                     Gestionar inscripciones
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-green-600 dark:text-green-400">✓</span>
+                    <span className="text-green-600 dark:text-green-400">
+                      ✓
+                    </span>
                     Generar partidos
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-green-600 dark:text-green-400">✓</span>
+                    <span className="text-green-600 dark:text-green-400">
+                      ✓
+                    </span>
                     Ver estadísticas
                   </li>
                 </ul>
@@ -403,7 +406,9 @@ export default function RegisterPage() {
               {selectedRole === "organizer" && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="organization">Organización (Opcional)</Label>
+                    <Label htmlFor="organization">
+                      Organización (Opcional)
+                    </Label>
                     <div className="relative">
                       <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input

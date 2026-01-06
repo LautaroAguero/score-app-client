@@ -10,7 +10,14 @@ import { SetupProgressBar } from "@/components/setup/SetupProgressBar";
 import { ExistingTeamsList } from "@/components/setup/ExistingTeamsList";
 import { QuickCreateTeam } from "@/components/setup/QuickCreateTeam";
 import { AddedTeamsTable } from "@/components/setup/AddedTeamsTable";
-import { ArrowLeft, ChevronRight, Loader2, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 import type { Team, Tournament, Registration } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -99,7 +106,7 @@ export default function AddTeamsPage() {
 
   const handleAddTeam = (teamId: string) => {
     if (!tournament) return;
-    
+
     if (selectedTeamIds.includes(teamId)) {
       toast({
         title: "Team already added",
@@ -126,7 +133,10 @@ export default function AddTeamsPage() {
     }
   };
 
-  const handleApproveRegistration = async (registrationId: string, teamId: string) => {
+  const handleApproveRegistration = async (
+    registrationId: string,
+    teamId: string
+  ) => {
     try {
       const token = localStorage.getItem("token");
       setApprovingIds(new Set([...approvingIds, registrationId]));
@@ -150,7 +160,9 @@ export default function AddTeamsPage() {
       });
 
       // Remove from pending registrations
-      setInscribedTeams(inscribedTeams.filter((reg) => reg.team._id !== teamId));
+      setInscribedTeams(
+        inscribedTeams.filter((reg) => reg.team._id !== teamId)
+      );
     } catch (error) {
       if (axios.isAxiosError(error)) {
         toast({
@@ -160,7 +172,9 @@ export default function AddTeamsPage() {
         });
       }
     } finally {
-      setApprovingIds(new Set([...approvingIds].filter((id) => id !== registrationId)));
+      setApprovingIds(
+        new Set([...approvingIds].filter((id) => id !== registrationId))
+      );
     }
   };
 
@@ -333,7 +347,10 @@ export default function AddTeamsPage() {
                     <Button
                       size="sm"
                       onClick={() =>
-                        handleApproveRegistration(registration._id, registration.team._id)
+                        handleApproveRegistration(
+                          registration._id,
+                          registration.team._id
+                        )
                       }
                       disabled={approvingIds.has(registration._id)}
                       className="gap-2"
@@ -343,7 +360,9 @@ export default function AddTeamsPage() {
                       ) : (
                         <CheckCircle className="h-4 w-4" />
                       )}
-                      {approvingIds.has(registration._id) ? "Approving..." : "Approve"}
+                      {approvingIds.has(registration._id)
+                        ? "Approving..."
+                        : "Approve"}
                     </Button>
                   ) : (
                     <Badge className="bg-green-600">Added</Badge>

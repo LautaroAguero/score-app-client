@@ -57,7 +57,8 @@ export default function TournamentDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isInscribeDialogOpen, setIsInscribeDialogOpen] = useState(false);
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
     fetchTournament();

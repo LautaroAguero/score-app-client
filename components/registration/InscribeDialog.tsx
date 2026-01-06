@@ -66,7 +66,8 @@ export function InscribeDialog({
         toast({
           title: "Error al cargar equipos",
           description:
-            error.response?.data?.message || "No se pudieron cargar tus equipos",
+            error.response?.data?.message ||
+            "No se pudieron cargar tus equipos",
           variant: "destructive",
         });
       }
@@ -122,7 +123,8 @@ export function InscribeDialog({
         toast({
           title: "Error al inscribirse",
           description:
-            error.response?.data?.message || "No se pudo completar la inscripción",
+            error.response?.data?.message ||
+            "No se pudo completar la inscripción",
           variant: "destructive",
         });
       }

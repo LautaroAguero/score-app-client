@@ -3,6 +3,7 @@
 ## 📋 Resumen General
 
 El frontend ha implementado:
+
 - ✅ Módulo de Registration (inscripción de equipos a torneos)
 - ✅ Login Unificado con selección de rol
 
@@ -63,7 +64,8 @@ DELETE /registrations/:id                     ✅
 
 Confirmar que están implementadas:
 
-#### 1. **POST /registrations** 
+#### 1. **POST /registrations**
+
 ```javascript
 // Validar
 - El equipo existe y pertenece al torneo
@@ -76,6 +78,7 @@ Confirmar que están implementadas:
 ```
 
 #### 2. **PATCH /registrations/:id/approve**
+
 ```javascript
 // Validar
 - Solo tournament.createdBy puede aprobar
@@ -85,6 +88,7 @@ Confirmar que están implementadas:
 ```
 
 #### 3. **PATCH /registrations/:id/reject**
+
 ```javascript
 // Validar
 - Solo tournament.createdBy puede rechazar
@@ -94,6 +98,7 @@ Confirmar que están implementadas:
 ```
 
 #### 4. **DELETE /registrations/:id**
+
 ```javascript
 // Validar
 - Solo registration.user puede cancelar (Bearer token)
@@ -102,6 +107,7 @@ Confirmar que están implementadas:
 ```
 
 #### 5. **GET /registrations/my-registrations**
+
 ```javascript
 // Retornar
 - Solo las inscripciones donde user===autenticado
@@ -114,7 +120,9 @@ Confirmar que están implementadas:
 ## 🔗 3. Relaciones Necesarias
 
 ### Team Model
+
 Confirmar que tiene:
+
 ```typescript
 {
   _id: ObjectId,
@@ -127,7 +135,9 @@ Confirmar que tiene:
 ```
 
 ### Tournament Model
+
 Confirmar que tiene:
+
 ```typescript
 {
   _id: ObjectId,
@@ -142,7 +152,9 @@ Confirmar que tiene:
 ```
 
 ### Registration Model
+
 Confirmar que tiene:
+
 ```typescript
 {
   _id: ObjectId,
@@ -156,7 +168,7 @@ Confirmar que tiene:
   rejectionReason?: string,
   createdAt: Date,
   updatedAt: Date,
-  
+
   // ← Índice único: { tournament, team }
 }
 ```
@@ -167,15 +179,15 @@ Confirmar que tiene:
 
 ```javascript
 // Registration
-db.registrations.createIndex({ tournament: 1, team: 1 }, { unique: true })
-db.registrations.createIndex({ user: 1 })
-db.registrations.createIndex({ tournament: 1, status: 1 })
+db.registrations.createIndex({ tournament: 1, team: 1 }, { unique: true });
+db.registrations.createIndex({ user: 1 });
+db.registrations.createIndex({ tournament: 1, status: 1 });
 
 // Team
-db.teams.createIndex({ tournament: 1, createdBy: 1 })
+db.teams.createIndex({ tournament: 1, createdBy: 1 });
 
 // Tournament
-db.tournaments.createIndex({ createdBy: 1 })
+db.tournaments.createIndex({ createdBy: 1 });
 ```
 
 ---
@@ -201,16 +213,19 @@ db.tournaments.createIndex({ createdBy: 1 })
 ## 📝 Notas Finales
 
 ### Lo que SÍ está listo:
+
 - ✅ Frontend completo (login, register, registration module)
 - ✅ Componentes y páginas
 - ✅ Validaciones UX
 
 ### Lo que necesita backend:
+
 - ⚠️ Soportar `userRole` en registro (cambio menor)
 - ⚠️ Confirmar todas las validaciones de Registration
 - ⚠️ Confirmar índices y relaciones
 
 ### Dependencias:
+
 - Backend debe devolver estructura exacta de Registration (documentada)
 - Frontend espera campos específicos en respuestas
 
@@ -232,7 +247,7 @@ POST /user/register
 POST /user/register
 {
   "name": "Admin",
-  "email": "admin@test.com", 
+  "email": "admin@test.com",
   "password": "test123",
   "userRole": "organizer"
 }

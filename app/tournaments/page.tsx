@@ -60,11 +60,7 @@ const sportTypes: SportType[] = [
   "volleyball",
   "rugby",
 ];
-const statusTypes: TournamentStatus[] = [
-  "setup",
-  "inprogress",
-  "finished",
-];
+const statusTypes: TournamentStatus[] = ["setup", "inprogress", "finished"];
 
 export default function TournamentsPage() {
   const { toast } = useToast();

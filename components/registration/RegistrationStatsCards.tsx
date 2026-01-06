@@ -57,7 +57,9 @@ export function RegistrationStatsCards({
         return (
           <Card key={stat.label} className="glass">
             <CardContent className="pt-6">
-              <div className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center mb-3`}>
+              <div
+                className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center mb-3`}
+              >
                 <Icon className={`h-6 w-6 ${stat.textColor}`} />
               </div>
               <p className="text-sm text-muted-foreground">{stat.label}</p>

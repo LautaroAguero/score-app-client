@@ -104,9 +104,7 @@ export default function LoginPage() {
             <Trophy className="h-8 w-8 text-accent-foreground" />
           </div>
           <h1 className="text-3xl font-bold mb-2">TournamentPro</h1>
-          <p className="text-muted-foreground">
-            Inicia sesión para continuar
-          </p>
+          <p className="text-muted-foreground">Inicia sesión para continuar</p>
         </div>
 
         <Card className="glass-strong">

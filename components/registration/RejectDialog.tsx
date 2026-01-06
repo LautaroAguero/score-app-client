@@ -46,7 +46,8 @@ export function RejectDialog({
         <DialogHeader>
           <DialogTitle>Rechazar Inscripción</DialogTitle>
           <DialogDescription>
-            Estás rechazando la inscripción del equipo <strong>{teamName}</strong>
+            Estás rechazando la inscripción del equipo{" "}
+            <strong>{teamName}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -77,11 +78,7 @@ export function RejectDialog({
             >
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              variant="destructive"
-              disabled={isLoading}
-            >
+            <Button type="submit" variant="destructive" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLoading ? "Rechazando..." : "Rechazar"}
             </Button>

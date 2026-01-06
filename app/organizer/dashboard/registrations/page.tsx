@@ -59,15 +59,21 @@ export default function MyRegistrationsPage() {
 
   const [user, setUser] = useState<User | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [groupedRegistrations, setGroupedRegistrations] = useState<TournamentGroup[]>([]);
+  const [groupedRegistrations, setGroupedRegistrations] = useState<
+    TournamentGroup[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isActing, setIsActing] = useState(false);
   const [registrationToDelete, setRegistrationToDelete] =
     useState<Registration | null>(null);
-  const [registrationToAction, setRegistrationToAction] =
-    useState<{ registration: Registration; registrationId: string; action: "approve" | "reject"; tournamentName?: string } | null>(null);
+  const [registrationToAction, setRegistrationToAction] = useState<{
+    registration: Registration;
+    registrationId: string;
+    action: "approve" | "reject";
+    tournamentName?: string;
+  } | null>(null);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);
 
@@ -75,7 +81,7 @@ export default function MyRegistrationsPage() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
-    
+
     if (!token || !userData) {
       toast({
         title: "Autenticación requerida",
@@ -105,7 +111,7 @@ export default function MyRegistrationsPage() {
       if (!userData) return;
 
       const parsedUser = JSON.parse(userData);
-      
+
       if (parsedUser.role === "user") {
         // Team captain: obtiene sus propias inscripciones
         const response = await axios.get(
@@ -148,8 +154,18 @@ export default function MyRegistrationsPage() {
     }
   };
 
-  const handleActionClick = (registrationId: string, registration: Registration, action: "approve" | "reject", tournamentName?: string) => {
-    setRegistrationToAction({ registration, registrationId, action, tournamentName });
+  const handleActionClick = (
+    registrationId: string,
+    registration: Registration,
+    action: "approve" | "reject",
+    tournamentName?: string
+  ) => {
+    setRegistrationToAction({
+      registration,
+      registrationId,
+      action,
+      tournamentName,
+    });
     setIsActionDialogOpen(true);
   };
 
@@ -180,7 +196,8 @@ export default function MyRegistrationsPage() {
         toast({
           title: "Error al cancelar",
           description:
-            error.response?.data?.message || "No se pudo cancelar la inscripción",
+            error.response?.data?.message ||
+            "No se pudo cancelar la inscripción",
           variant: "destructive",
         });
       }
@@ -197,17 +214,24 @@ export default function MyRegistrationsPage() {
       const token = localStorage.getItem("token");
       const { registrationId, action } = registrationToAction;
 
-      const endpoint = action === "approve"
-        ? `${API_URL}/registrations/${registrationId}/approve`
-        : `${API_URL}/registrations/${registrationId}/reject`;
+      const endpoint =
+        action === "approve"
+          ? `${API_URL}/registrations/${registrationId}/approve`
+          : `${API_URL}/registrations/${registrationId}/reject`;
 
-      await axios.patch(endpoint, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.patch(
+        endpoint,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       toast({
         title: "Éxito",
-        description: `Inscripción ${action === "approve" ? "aprobada" : "rechazada"} exitosamente`,
+        description: `Inscripción ${
+          action === "approve" ? "aprobada" : "rechazada"
+        } exitosamente`,
       });
 
       setIsActionDialogOpen(false);
@@ -218,7 +242,8 @@ export default function MyRegistrationsPage() {
         toast({
           title: "Error",
           description:
-            error.response?.data?.message || "No se pudo procesar la inscripción",
+            error.response?.data?.message ||
+            "No se pudo procesar la inscripción",
           variant: "destructive",
         });
       }
@@ -261,7 +286,9 @@ export default function MyRegistrationsPage() {
               <label className="text-sm font-medium">Filtrar por estado:</label>
               <Select
                 value={filterStatus}
-                onValueChange={(value) => setFilterStatus(value as FilterStatus)}
+                onValueChange={(value) =>
+                  setFilterStatus(value as FilterStatus)
+                }
               >
                 <SelectTrigger className="w-[200px]">
                   <SelectValue />
@@ -330,7 +357,7 @@ export default function MyRegistrationsPage() {
                     <CardTitle>{group.tournament.name}</CardTitle>
                     <CardDescription>
                       {group.registrations.length} inscripción(es)
-                      {group.tournament.maxTeams && 
+                      {group.tournament.maxTeams &&
                         ` de ${group.tournament.maxTeams} equipos máximo`}
                     </CardDescription>
                   </div>
@@ -387,7 +414,12 @@ export default function MyRegistrationsPage() {
                               size="sm"
                               variant="outline"
                               onClick={() =>
-                                handleActionClick(registration._id || (registration as any).id, registration, "reject", group.tournament.name)
+                                handleActionClick(
+                                  registration._id || (registration as any).id,
+                                  registration,
+                                  "reject",
+                                  group.tournament.name
+                                )
                               }
                               disabled={isActing}
                             >
@@ -401,7 +433,12 @@ export default function MyRegistrationsPage() {
                             <Button
                               size="sm"
                               onClick={() =>
-                                handleActionClick(registration._id || (registration as any).id, registration, "approve", group.tournament.name)
+                                handleActionClick(
+                                  registration._id || (registration as any).id,
+                                  registration,
+                                  "approve",
+                                  group.tournament.name
+                                )
                               }
                               disabled={isActing}
                             >
@@ -472,7 +509,12 @@ export default function MyRegistrationsPage() {
               la inscripción del equipo{" "}
               <strong>{registrationToAction?.registration.team.name}</strong> al
               torneo{" "}
-              <strong>{registrationToAction?.tournamentName || registrationToAction?.registration.tournament?.name || "Sin torneo"}</strong>?
+              <strong>
+                {registrationToAction?.tournamentName ||
+                  registrationToAction?.registration.tournament?.name ||
+                  "Sin torneo"}
+              </strong>
+              ?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

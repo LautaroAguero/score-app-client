@@ -614,7 +614,9 @@ export default function MatchManagementPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {teams.filter(
-                        (team) => team.tournament && team.tournament._id === newMatch.tournament
+                        (team) =>
+                          team.tournament &&
+                          team.tournament._id === newMatch.tournament
                       ).length === 0 ? (
                         <div className="p-2 text-sm text-muted-foreground text-center">
                           Select tournament first
@@ -623,10 +625,14 @@ export default function MatchManagementPage() {
                         teams
                           .filter(
                             (team) =>
-                              team.tournament && team.tournament._id === newMatch.tournament
+                              team.tournament &&
+                              team.tournament._id === newMatch.tournament
                           )
                           .map((team) => (
-                            <SelectItem key={team._id || (team as any).id} value={team._id || (team as any).id}>
+                            <SelectItem
+                              key={team._id || (team as any).id}
+                              value={team._id || (team as any).id}
+                            >
                               {team.name}
                             </SelectItem>
                           ))
@@ -648,7 +654,9 @@ export default function MatchManagementPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {teams.filter(
-                        (team) => team.tournament && team.tournament._id === newMatch.tournament
+                        (team) =>
+                          team.tournament &&
+                          team.tournament._id === newMatch.tournament
                       ).length === 0 ? (
                         <div className="p-2 text-sm text-muted-foreground text-center">
                           Select tournament first
@@ -657,11 +665,16 @@ export default function MatchManagementPage() {
                         teams
                           .filter(
                             (team) =>
-                              team.tournament && team.tournament._id === newMatch.tournament &&
-                              (team._id || (team as any).id) !== newMatch.homeTeam
+                              team.tournament &&
+                              team.tournament._id === newMatch.tournament &&
+                              (team._id || (team as any).id) !==
+                                newMatch.homeTeam
                           )
                           .map((team) => (
-                            <SelectItem key={team._id || (team as any).id} value={team._id || (team as any).id}>
+                            <SelectItem
+                              key={team._id || (team as any).id}
+                              value={team._id || (team as any).id}
+                            >
                               {team.name}
                             </SelectItem>
                           ))

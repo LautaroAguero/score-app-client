@@ -176,7 +176,11 @@ export default function OrganizerDashboardLayout({
           {/* Role Badge */}
           <div className="px-4 py-2 mx-4 rounded-lg bg-accent/20 border border-accent/50">
             <div className="text-xs font-semibold text-accent uppercase">
-              {user?.role === "user" ? "Team Captain" : user?.role === "organizer" ? "Organizer" : "Admin"}
+              {user?.role === "user"
+                ? "Team Captain"
+                : user?.role === "organizer"
+                ? "Organizer"
+                : "Admin"}
             </div>
           </div>
 

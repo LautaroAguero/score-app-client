@@ -98,7 +98,8 @@ export default function ManageRegistrationsPage() {
           toast({
             title: "Error",
             description:
-              error.response?.data?.message || "No se pudieron cargar los datos",
+              error.response?.data?.message ||
+              "No se pudieron cargar los datos",
             variant: "destructive",
           });
         }
@@ -132,7 +133,8 @@ export default function ManageRegistrationsPage() {
         toast({
           title: "Error",
           description:
-            error.response?.data?.message || "No se pudo aprobar la inscripción",
+            error.response?.data?.message ||
+            "No se pudo aprobar la inscripción",
           variant: "destructive",
         });
       }
@@ -176,7 +178,8 @@ export default function ManageRegistrationsPage() {
         toast({
           title: "Error",
           description:
-            error.response?.data?.message || "No se pudo rechazar la inscripción",
+            error.response?.data?.message ||
+            "No se pudo rechazar la inscripción",
           variant: "destructive",
         });
       }
@@ -208,9 +211,7 @@ export default function ManageRegistrationsPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Gestionar Inscripciones</h1>
-        <p className="text-muted-foreground mt-2">
-          {tournament?.name}
-        </p>
+        <p className="text-muted-foreground mt-2">{tournament?.name}</p>
       </div>
 
       {/* Stats */}
@@ -304,9 +305,7 @@ export default function ManageRegistrationsPage() {
       {/* Reject Dialog */}
       <RejectDialog
         open={rejectDialog.open}
-        onOpenChange={(open) =>
-          setRejectDialog((prev) => ({ ...prev, open }))
-        }
+        onOpenChange={(open) => setRejectDialog((prev) => ({ ...prev, open }))}
         registrationId={rejectDialog.registrationId}
         teamName={rejectDialog.teamName}
         onConfirm={handleRejectConfirm}
