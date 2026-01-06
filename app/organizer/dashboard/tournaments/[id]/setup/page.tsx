@@ -229,6 +229,16 @@ export default function TournamentSetupPage() {
             Your tournament is ready to go. You can now view matches and manage
             the tournament.
           </p>
+          <Button
+            className="mt-4"
+            onClick={() =>
+              router.push(
+                `/organizer/dashboard/tournaments/${tournamentId}/registrations`
+              )
+            }
+          >
+            Gestionar Inscripciones
+          </Button>
         </div>
       )}
     </div>

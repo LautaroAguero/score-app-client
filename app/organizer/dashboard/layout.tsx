@@ -2,9 +2,9 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -19,9 +19,10 @@ import {
   X,
   LogOut,
   Users2,
+  Loader2,
 } from "lucide-react";
 
-const sidebarItems = [
+const organizerItems = [
   { href: "/organizer/dashboard", label: "Dashboard", icon: LayoutDashboard },
   {
     href: "/organizer/dashboard/tournaments",
@@ -45,12 +46,35 @@ const sidebarItems = [
     icon: Users2,
   },
   {
-    href: "/organizer/dashboard/analytics",
-    label: "Analytics",
+    href: "/organizer/dashboard/registrations",
+    label: "Mis Inscripciones",
     icon: TrendingUp,
   },
   { href: "/organizer/dashboard/settings", label: "Settings", icon: Settings },
 ];
+
+const captainItems = [
+  { href: "/organizer/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/organizer/dashboard/teams", label: "My Teams", icon: Users },
+  {
+    href: "/organizer/dashboard/matches",
+    label: "Match Management",
+    icon: Calendar,
+  },
+  {
+    href: "/organizer/dashboard/registrations",
+    label: "Mis Inscripciones",
+    icon: TrendingUp,
+  },
+  { href: "/organizer/dashboard/settings", label: "Settings", icon: Settings },
+];
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role?: "user" | "organizer" | "admin" | null;
+}
 
 export default function OrganizerDashboardLayout({
   children,
@@ -58,7 +82,57 @@ export default function OrganizerDashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          router.push("/login");
+          return;
+        }
+
+        // Obtener datos del usuario desde el backend o localStorage
+        // Por ahora, almacenaremos el role en localStorage después del login
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error("Error loading user:", error);
+        router.push("/login");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUser();
+  }, [router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-accent" />
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Determinar items del sidebar según el rol
+  const sidebarItems = user?.role === "user" ? captainItems : organizerItems;
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
 
   return (
     <div className="flex min-h-screen">
@@ -99,6 +173,13 @@ export default function OrganizerDashboardLayout({
             </Button>
           </div>
 
+          {/* Role Badge */}
+          <div className="px-4 py-2 mx-4 rounded-lg bg-accent/20 border border-accent/50">
+            <div className="text-xs font-semibold text-accent uppercase">
+              {user?.role === "user" ? "Team Captain" : user?.role === "organizer" ? "Organizer" : "Admin"}
+            </div>
+          </div>
+
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {sidebarItems.map((item) => {
@@ -126,12 +207,12 @@ export default function OrganizerDashboardLayout({
           <div className="p-4 border-t border-border/50">
             <div className="flex items-center gap-3 mb-3 px-2">
               <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold">
-                JD
+                {user?.name?.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm truncate">John Doe</div>
+                <div className="font-medium text-sm truncate">{user?.name}</div>
                 <div className="text-xs text-muted-foreground truncate">
-                  john@example.com
+                  {user?.email}
                 </div>
               </div>
             </div>
@@ -139,12 +220,10 @@ export default function OrganizerDashboardLayout({
               variant="outline"
               className="w-full bg-transparent"
               size="sm"
-              asChild
+              onClick={handleLogout}
             >
-              <Link href="/organizer/login">
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Link>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
             </Button>
           </div>
         </div>

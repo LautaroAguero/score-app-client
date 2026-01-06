@@ -195,7 +195,7 @@ export default function TeamManagementPage() {
       }
 
       const response = await axios.get(
-        `${API_URL}/tournaments/my-tournaments`,
+        `${API_URL}/tournaments`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -304,15 +304,15 @@ export default function TeamManagementPage() {
     const matchesTournament =
       tournamentId || // If viewing specific tournament, don't filter by tournament
       selectedTournament === "all" ||
-      team.tournament._id === selectedTournament;
+      (team.tournament && team.tournament._id === selectedTournament);
     return matchesSearch && matchesTournament;
   });
 
   const handleAddTeam = async () => {
-    if (!newTeam.name || (!newTeam.tournamentId && !tournamentId)) {
+    if (!newTeam.name) {
       toast({
         title: "Missing required fields",
-        description: "Please fill in team name and select a tournament",
+        description: "Please fill in team name",
         variant: "destructive",
       });
       return;
@@ -324,7 +324,14 @@ export default function TeamManagementPage() {
 
       const formData = new FormData();
       formData.append("name", newTeam.name);
-      formData.append("tournament", newTeam.tournamentId || tournamentId!);
+      
+      // Only add tournament if provided (it's optional)
+      if (tournamentId) {
+        formData.append("tournament", tournamentId);
+      } else if (newTeam.tournamentId) {
+        formData.append("tournament", newTeam.tournamentId);
+      }
+      
       if (newTeam.group && newTeam.group !== "none") {
         formData.append("group", newTeam.group);
       }
@@ -379,8 +386,18 @@ export default function TeamManagementPage() {
     try {
       setIsDeleting(true);
       const token = localStorage.getItem("token");
+      const teamId = teamToDelete._id || (teamToDelete as any).id;
 
-      await axios.delete(`${API_URL}/teams/${teamToDelete._id}`, {
+      if (!teamId) {
+        toast({
+          title: "Error",
+          description: "Team ID not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await axios.delete(`${API_URL}/teams/${teamId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -392,7 +409,7 @@ export default function TeamManagementPage() {
       });
 
       // Remove team from the list
-      setTeams(teams.filter((t) => t._id !== teamToDelete._id));
+      setTeams(teams.filter((t) => (t._id || (t as any).id) !== teamId));
       setIsDeleteDialogOpen(false);
       setTeamToDelete(null);
     } catch (error) {
@@ -417,7 +434,7 @@ export default function TeamManagementPage() {
     setTeamToEdit(team);
     setEditTeam({
       name: team.name,
-      tournamentId: team.tournament._id,
+      tournamentId: team.tournament?._id || "",
       group: team.group || "",
     });
     setEditLogoFile(null);
@@ -428,10 +445,10 @@ export default function TeamManagementPage() {
   };
 
   const handleEditTeam = async () => {
-    if (!editTeam.name || !editTeam.tournamentId || !teamToEdit) {
+    if (!editTeam.name || !teamToEdit) {
       toast({
         title: "Missing required fields",
-        description: "Please fill in team name and select a tournament",
+        description: "Please fill in team name",
         variant: "destructive",
       });
       return;
@@ -440,10 +457,22 @@ export default function TeamManagementPage() {
     try {
       setIsSubmitting(true);
       const token = localStorage.getItem("token");
+      const teamId = teamToEdit._id || (teamToEdit as any).id;
+
+      if (!teamId) {
+        toast({
+          title: "Error",
+          description: "Team ID not found",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const formData = new FormData();
       formData.append("name", editTeam.name);
-      formData.append("tournament", editTeam.tournamentId);
+      if (editTeam.tournamentId) {
+        formData.append("tournament", editTeam.tournamentId);
+      }
       if (editTeam.group && editTeam.group !== "none") {
         formData.append("group", editTeam.group);
       }
@@ -452,7 +481,7 @@ export default function TeamManagementPage() {
       }
 
       const response = await axios.put(
-        `${API_URL}/teams/${teamToEdit._id}`,
+        `${API_URL}/teams/${teamId}`,
         formData,
         {
           headers: {
@@ -469,7 +498,7 @@ export default function TeamManagementPage() {
 
       // Update team in the list
       setTeams(
-        teams.map((t) => (t._id === teamToEdit._id ? response.data.team : t))
+        teams.map((t) => ((t._id || (t as any).id) === teamId ? response.data.team : t))
       );
 
       // Reset form and close dialog
@@ -581,12 +610,12 @@ export default function TeamManagementPage() {
               <DialogTitle>
                 {tournamentContext
                   ? `Add Team to ${tournamentContext.name}`
-                  : "Add New Team"}
+                  : "Create New Team"}
               </DialogTitle>
               <DialogDescription>
                 {tournamentContext
                   ? "Enter the team details to add them to this tournament"
-                  : "Enter the team details to add them to a tournament"}
+                  : "Create a new team and register it to tournaments later"}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -602,16 +631,9 @@ export default function TeamManagementPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="tournament">Tournament *</Label>
-                {tournamentContext ? (
-                  <Input
-                    id="tournament"
-                    value={tournamentContext.name}
-                    disabled
-                    className="bg-muted"
-                  />
-                ) : (
+              {!tournamentContext && (
+                <div className="space-y-2">
+                  <Label htmlFor="tournament">Tournament (Optional)</Label>
                   <Select
                     value={newTeam.tournamentId}
                     onValueChange={(value) =>
@@ -619,7 +641,7 @@ export default function TeamManagementPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select tournament" />
+                      <SelectValue placeholder="Select tournament (can register later)" />
                     </SelectTrigger>
                     <SelectContent>
                       {tournaments.length === 0 ? (
@@ -638,8 +660,11 @@ export default function TeamManagementPage() {
                       )}
                     </SelectContent>
                   </Select>
-                )}
-              </div>
+                  <p className="text-xs text-muted-foreground">
+                    You can create the team now and register it to tournaments later
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="group">Group (Optional)</Label>
@@ -721,11 +746,7 @@ export default function TeamManagementPage() {
               </Button>
               <Button
                 onClick={handleAddTeam}
-                disabled={
-                  !newTeam.name ||
-                  (!newTeam.tournamentId && !tournamentId) ||
-                  isSubmitting
-                }
+                disabled={!newTeam.name || isSubmitting}
               >
                 {isSubmitting ? (
                   <>
@@ -947,7 +968,7 @@ export default function TeamManagementPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTeams.map((team) => (
             <Card
-              key={team._id}
+              key={team._id || (team as any).id}
               className="glass hover:shadow-lg transition-shadow"
             >
               <CardHeader>
@@ -969,7 +990,7 @@ export default function TeamManagementPage() {
                     <div>
                       <CardTitle className="text-lg">{team.name}</CardTitle>
                       <CardDescription className="text-sm">
-                        {team.tournament.name}
+                        {team.tournament ? team.tournament.name : "No tournament assigned"}
                       </CardDescription>
                     </div>
                   </div>

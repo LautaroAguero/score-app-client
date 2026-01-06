@@ -10,13 +10,13 @@ import { SetupProgressBar } from "@/components/setup/SetupProgressBar";
 import { ExistingTeamsList } from "@/components/setup/ExistingTeamsList";
 import { QuickCreateTeam } from "@/components/setup/QuickCreateTeam";
 import { AddedTeamsTable } from "@/components/setup/AddedTeamsTable";
-import { ArrowLeft, ChevronRight, Loader2, AlertCircle } from "lucide-react";
-import type { Team, Tournament } from "@/lib/types";
+import { ArrowLeft, ChevronRight, Loader2, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import type { Team, Tournament, Registration } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const MIN_TEAMS = 2;
-const MAX_TEAMS = 32;
 
 export default function AddTeamsPage() {
   const params = useParams();
@@ -25,9 +25,10 @@ export default function AddTeamsPage() {
   const tournamentId = params.id as string;
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
-  const [existingTeams, setExistingTeams] = useState<Team[]>([]);
+  const [inscribedTeams, setInscribedTeams] = useState<Registration[]>([]);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<Team[]>([]);
+  const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
 
   const [isLoadingTeams, setIsLoadingTeams] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,11 +54,11 @@ export default function AddTeamsPage() {
         return;
       }
 
-      const [tournamentRes, teamsRes] = await Promise.all([
+      const [tournamentRes, registrationsRes] = await Promise.all([
         axios.get(`${API_URL}/tournaments/${tournamentId}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get(`${API_URL}/teams`, {
+        axios.get(`${API_URL}/registrations/tournament/${tournamentId}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -65,8 +66,8 @@ export default function AddTeamsPage() {
       const tourney = tournamentRes.data.tournament || tournamentRes.data;
       setTournament(tourney);
 
-      const teams = teamsRes.data.teams || teamsRes.data;
-      setExistingTeams(teams);
+      const registrations = registrationsRes.data.registrations || [];
+      setInscribedTeams(registrations);
 
       // Initialize selected teams from tournament
       if (tourney.teams && Array.isArray(tourney.teams)) {
@@ -75,8 +76,10 @@ export default function AddTeamsPage() {
         );
         setSelectedTeamIds(selectedIds);
 
-        // Filter selected teams from existing teams
-        const selected = teams.filter((t: Team) => selectedIds.includes(t._id));
+        // Filter selected teams from inscribed teams
+        const selected = registrations
+          .filter((reg: Registration) => selectedIds.includes(reg.team._id))
+          .map((reg: Registration) => reg.team);
         setSelectedTeams(selected);
       }
     } catch (error) {
@@ -95,13 +98,69 @@ export default function AddTeamsPage() {
   };
 
   const handleAddTeam = (teamId: string) => {
-    if (!selectedTeamIds.includes(teamId)) {
-      setSelectedTeamIds([...selectedTeamIds, teamId]);
+    if (!tournament) return;
+    
+    if (selectedTeamIds.includes(teamId)) {
+      toast({
+        title: "Team already added",
+        description: "This team is already in the selection",
+        variant: "destructive",
+      });
+      return;
+    }
 
-      const team = existingTeams.find((t) => t._id === teamId);
+    if (selectedTeamIds.length >= tournament.numberOfParticipants) {
+      toast({
+        title: "Team limit reached",
+        description: `You can only add ${tournament.numberOfParticipants} teams for this tournament`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedTeamIds([...selectedTeamIds, teamId]);
+
+    const team = inscribedTeams.find((reg) => reg.team._id === teamId)?.team;
+    if (team) {
+      setSelectedTeams([...selectedTeams, team]);
+    }
+  };
+
+  const handleApproveRegistration = async (registrationId: string, teamId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      setApprovingIds(new Set([...approvingIds, registrationId]));
+
+      await axios.patch(
+        `${API_URL}/registrations/${registrationId}/approve`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Auto-add to selected teams
+      setSelectedTeamIds([...selectedTeamIds, teamId]);
+      const team = inscribedTeams.find((reg) => reg.team._id === teamId)?.team;
       if (team) {
         setSelectedTeams([...selectedTeams, team]);
       }
+
+      toast({
+        title: "Success",
+        description: "Registration approved and team added!",
+      });
+
+      // Remove from pending registrations
+      setInscribedTeams(inscribedTeams.filter((reg) => reg.team._id !== teamId));
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast({
+          title: "Error approving registration",
+          description: error.response?.data?.message || "Failed to approve",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setApprovingIds(new Set([...approvingIds].filter((id) => id !== registrationId)));
     }
   };
 
@@ -126,6 +185,8 @@ export default function AddTeamsPage() {
 
   const handleNext = async () => {
     // Validation
+    if (!tournament) return;
+
     if (selectedTeamIds.length < MIN_TEAMS) {
       toast({
         title: "Not enough teams",
@@ -135,10 +196,10 @@ export default function AddTeamsPage() {
       return;
     }
 
-    if (selectedTeamIds.length > MAX_TEAMS) {
+    if (selectedTeamIds.length > tournament.numberOfParticipants) {
       toast({
         title: "Too many teams",
-        description: `You can add maximum ${MAX_TEAMS} teams`,
+        description: `You can add maximum ${tournament.numberOfParticipants} teams`,
         variant: "destructive",
       });
       return;
@@ -197,16 +258,17 @@ export default function AddTeamsPage() {
     );
   }
 
+  const maxTeams = tournament?.numberOfParticipants || 32;
   const isValid =
-    selectedTeamIds.length >= MIN_TEAMS && selectedTeamIds.length <= MAX_TEAMS;
+    selectedTeamIds.length >= MIN_TEAMS && selectedTeamIds.length <= maxTeams;
   const validationMessage =
     selectedTeamIds.length < MIN_TEAMS
       ? `Add at least ${MIN_TEAMS - selectedTeamIds.length} more team${
           MIN_TEAMS - selectedTeamIds.length !== 1 ? "s" : ""
         }`
-      : selectedTeamIds.length > MAX_TEAMS
-      ? `Remove ${selectedTeamIds.length - MAX_TEAMS} team${
-          selectedTeamIds.length - MAX_TEAMS !== 1 ? "s" : ""
+      : selectedTeamIds.length > maxTeams
+      ? `Remove ${selectedTeamIds.length - maxTeams} team${
+          selectedTeamIds.length - maxTeams !== 1 ? "s" : ""
         }`
       : "Ready to proceed to next step";
 
@@ -238,13 +300,60 @@ export default function AddTeamsPage() {
       {/* Progress Bar */}
       <SetupProgressBar currentStep={2} totalSteps={4} />
 
-      {/* Existing Teams List */}
-      <ExistingTeamsList
-        teams={existingTeams}
-        selectedTeamIds={selectedTeamIds}
-        onAddTeam={handleAddTeam}
-        isLoading={isLoadingTeams}
-      />
+      {/* Inscribed Teams List */}
+      <Card className="glass">
+        <CardHeader>
+          <CardTitle>Inscribed Teams</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingTeams ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : inscribedTeams.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">
+              No teams have inscribed to this tournament yet.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {inscribedTeams.map((registration) => (
+                <div
+                  key={registration._id}
+                  className="flex items-center justify-between gap-4 p-4 rounded-lg border border-border/50 bg-background/50"
+                >
+                  <div className="flex-1">
+                    <h4 className="font-semibold">{registration.team.name}</h4>
+                    {registration.team.tournament && (
+                      <p className="text-sm text-muted-foreground">
+                        Tournament: {registration.team.tournament.name}
+                      </p>
+                    )}
+                  </div>
+                  {!selectedTeamIds.includes(registration.team._id) ? (
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        handleApproveRegistration(registration._id, registration.team._id)
+                      }
+                      disabled={approvingIds.has(registration._id)}
+                      className="gap-2"
+                    >
+                      {approvingIds.has(registration._id) ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4" />
+                      )}
+                      {approvingIds.has(registration._id) ? "Approving..." : "Approve"}
+                    </Button>
+                  ) : (
+                    <Badge className="bg-green-600">Added</Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Quick Create Team */}
       <QuickCreateTeam
@@ -268,7 +377,7 @@ export default function AddTeamsPage() {
       >
         <div className="flex-1">
           <p className="font-semibold">
-            {selectedTeamIds.length}/32 Teams Selected
+            {selectedTeamIds.length}/{maxTeams} Teams Selected
           </p>
           <p className="text-sm mt-1">{validationMessage}</p>
         </div>

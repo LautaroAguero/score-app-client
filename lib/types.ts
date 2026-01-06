@@ -5,7 +5,7 @@ export type SportType =
   | "tennis"
   | "rugby";
 
-export type TournamentStatus = "upcoming" | "inprogress" | "finished";
+export type TournamentStatus = "upcoming" | "inprogress" | "finished" | "setup";
 
 export type TournamentFormat = "league" | "knockout" | "hybrid";
 
@@ -99,4 +99,51 @@ export interface Organizer {
   organization?: string;
   phone?: string;
   experience?: string;
+}
+
+export type RegistrationStatus = "pending" | "approved" | "rejected";
+
+export interface Registration {
+  _id: string;
+  tournament: {
+    _id: string;
+    name: string;
+    sportType: SportType;
+  };
+  team: {
+    _id: string;
+    name: string;
+    teamLogo?: string;
+  };
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  approvedBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  status: RegistrationStatus;
+  appliedAt: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RegistrationStats {
+  tournament: {
+    _id: string;
+    name: string;
+    maxTeams: number;
+    requiresApproval: boolean;
+  };
+  stats: {
+    total: number;
+    approved: number;
+    pending: number;
+    rejected: number;
+  };
 }

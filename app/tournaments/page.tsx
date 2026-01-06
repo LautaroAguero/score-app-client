@@ -54,19 +54,16 @@ import axios from "axios";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const sportTypes: SportType[] = [
-  "Soccer",
-  "Basketball",
-  "Tennis",
-  "Volleyball",
-  "Cricket",
-  "Baseball",
-  "Rugby",
-  "Hockey",
+  "soccer",
+  "basketball",
+  "tennis",
+  "volleyball",
+  "rugby",
 ];
 const statusTypes: TournamentStatus[] = [
-  "Upcoming",
-  "In Progress",
-  "Completed",
+  "setup",
+  "inprogress",
+  "finished",
 ];
 
 export default function TournamentsPage() {
@@ -384,9 +381,23 @@ function TournamentCard({
   viewMode: "grid" | "list";
 }) {
   const statusColors = {
-    upcoming: "bg-blue-500",
+    setup: "bg-blue-500",
     inprogress: "bg-green-500",
     finished: "bg-gray-500",
+    upcoming: "bg-yellow-500",
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "setup":
+        return "Sign Open";
+      case "inprogress":
+        return "In Progress";
+      case "finished":
+        return "Finished";
+      default:
+        return "Upcoming";
+    }
   };
 
   if (viewMode === "list") {
@@ -406,11 +417,7 @@ function TournamentCard({
                   variant="secondary"
                   className={cn("text-white", statusColors[tournament.status])}
                 >
-                  {tournament.status === "upcoming"
-                    ? "Upcoming"
-                    : tournament.status === "inprogress"
-                    ? "In Progress"
-                    : "Finished"}
+                  {getStatusLabel(tournament.status)}
                 </Badge>
                 <Badge variant="outline">{tournament.tournamentFormat}</Badge>
               </div>
@@ -488,11 +495,7 @@ function TournamentCard({
             variant="secondary"
             className={cn("text-white", statusColors[tournament.status])}
           >
-            {tournament.status === "upcoming"
-              ? "Upcoming"
-              : tournament.status === "inprogress"
-              ? "In Progress"
-              : "Finished"}
+            {getStatusLabel(tournament.status)}
           </Badge>
         </div>
         <div className="absolute bottom-3 left-3">

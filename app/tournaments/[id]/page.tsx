@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Match, Standing } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { InscribeDialog } from "@/components/registration";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -54,6 +55,9 @@ export default function TournamentDetailPage() {
   const [isLoadingMatches, setIsLoadingMatches] = useState(true);
   const [isLoadingStandings, setIsLoadingStandings] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isInscribeDialogOpen, setIsInscribeDialogOpen] = useState(false);
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
     fetchTournament();
@@ -417,6 +421,35 @@ export default function TournamentDetailPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Registration Button */}
+                <Card className="glass border-green-200/30 bg-green-50/10 dark:bg-green-950/20">
+                  <CardContent className="pt-6">
+                    {token ? (
+                      <Button
+                        onClick={() => setIsInscribeDialogOpen(true)}
+                        className="w-full"
+                        size="lg"
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        Inscribirse a este Torneo
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => router.push("/organizer/login")}
+                        className="w-full"
+                        size="lg"
+                      >
+                        Inicia sesión para Inscribirte
+                      </Button>
+                    )}
+                    <p className="text-xs text-muted-foreground text-center mt-3">
+                      {tournament.requiresApproval
+                        ? "Inscripción sujeta a aprobación del organizador"
+                        : "Inscripción automática"}
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </TabsContent>
@@ -636,6 +669,19 @@ export default function TournamentDetailPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Inscribe Dialog */}
+      {tournament && (
+        <InscribeDialog
+          open={isInscribeDialogOpen}
+          onOpenChange={setIsInscribeDialogOpen}
+          tournament={tournament}
+          onSuccess={() => {
+            setIsInscribeDialogOpen(false);
+            router.push("/organizer/dashboard/registrations");
+          }}
+        />
+      )}
     </div>
   );
 }

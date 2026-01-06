@@ -113,10 +113,10 @@ export function Navigation() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem asChild>
-                <Link href="/organizer/login">Organizer Login</Link>
+                <Link href="/login">Iniciar Sesión</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/organizer/register">Become an Organizer</Link>
+                <Link href="/register">Crear Cuenta</Link>
               </DropdownMenuItem>
               {isLoggedIn && (
                 <>
@@ -125,15 +125,17 @@ export function Navigation() {
                     <Link href="/organizer/dashboard">Dashboard</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/organizer/profile">Profile</Link>
+                    <Link href="/organizer/dashboard/registrations">
+                      Mis Inscripciones
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/organizer/dashboard">Settings</Link>
+                    <Link href="/organizer/profile">Perfil</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                    Cerrar Sesión
                   </DropdownMenuItem>
                 </>
               )}
